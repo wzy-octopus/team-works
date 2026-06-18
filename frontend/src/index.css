@@ -1,0 +1,57 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+
+  --primary: #6c63ff;
+  --accent: #00d4aa;
+
+  /* Light mode */
+  --bg-base: #f0f2f7;
+  --bg-surface: #ffffff;
+  --bg-input: rgba(0, 0, 0, 0.04);
+  --bg-hover: rgba(0, 0, 0, 0.06);
+  --text-primary: #111827;
+  --text-muted: #6b7280;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg-base: #0f1117;
+  --bg-surface: #1a1d27;
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-hover: rgba(255, 255, 255, 0.1);
+  --text-primary: #ffffff;
+  --text-muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* フォーム要素のテキスト色をテーマに合わせる */
+:root textarea,
+:root input {
+  color: #111827;
+}
+
+.dark textarea,
+.dark input {
+  color: #ffffff;
+}
+
+#root {
+  min-height: 100vh;
+}

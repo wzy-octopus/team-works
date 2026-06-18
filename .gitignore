@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# Database
+*.db
+*.sqlite3
+*.db-journal
+*.bak
+
+# Frontend build
+frontend/dist/
+frontend/node_modules/
+
+# Backend static (generated from frontend build)
+backend/static/
+
+# Deploy artifact
+deploy.zip
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local session files (do not commit)
+AI_SESSION_ENTRY.md
+AI_TASK_BOARD.md
+AI_HANDOFF_SUMMARY.md
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json

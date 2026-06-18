@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>28teamworks – 週報詳細（上長）</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3248;
+      --primary:   #6c63ff;
+      --primary-l: #8b84ff;
+      --accent:    #00d4aa;
+      --warn:      #ffb347;
+      --danger:    #ff6b7a;
+      --text:      #e8eaf0;
+      --text-sub:  #8b90a7;
+      --radius:    12px;
+      --radius-s:  8px;
+    }
+    [data-theme="light"] {
+      --bg:        #f0f2f9;
+      --surface:   #ffffff;
+      --surface2:  #f5f6fb;
+      --border:    #e3e6f0;
+      --primary:   #5b52ee;
+      --primary-l: #6c63ff;
+      --accent:    #00b896;
+      --warn:      #e09800;
+      --danger:    #e8445a;
+      --text:      #1a1d2e;
+      --text-sub:  #6b7280;
+    }
+    body { font-family: 'Segoe UI','Hiragino Sans',sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; transition: background .25s, color .25s; }
+    .sidebar, .header, .card, .section-card, .feedback-box { transition: background .25s, border-color .25s, color .25s; }
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 0; position: fixed; top: 0; left: 0; height: 100vh; }
+    .logo { padding: 0 20px 24px; font-size: 18px; font-weight: 700; color: var(--primary-l); letter-spacing: .03em; display: flex; align-items: center; gap: 8px; }
+    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .role-chip { margin: 0 20px 16px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; background: rgba(255,179,71,.15); color: var(--warn); border: 1px solid rgba(255,179,71,.25); text-align: center; }
+    .sidebar-section { padding: 8px 12px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-sub); }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 14px; color: var(--text-sub); cursor: pointer; transition: all .15s; border-left: 3px solid transparent; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--primary-l); background: rgba(108,99,255,.1); border-left-color: var(--primary); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .user-avatar-sm { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #6c63ff, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .user-role { font-size: 11px; color: var(--text-sub); }
+
+    /* ── Main ── */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+    .back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-sub); cursor: pointer; padding: 6px 10px; border-radius: var(--radius-s); border: 1px solid var(--border); background: transparent; transition: all .15s; text-decoration: none; }
+    .back-btn:hover { border-color: var(--primary); color: var(--primary-l); }
+    .header-member { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .member-avatar-lg { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; flex-shrink: 0; }
+    .header-member-info h2 { font-size: 16px; font-weight: 700; }
+    .header-member-info p { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .status-pill { font-size: 12px; padding: 4px 12px; border-radius: 99px; font-weight: 600; }
+    .pill-unread  { background: rgba(108,99,255,.15); color: var(--primary-l); border: 1px solid rgba(108,99,255,.3); }
+    .pill-replied { background: rgba(0,212,170,.15);  color: var(--accent);    border: 1px solid rgba(0,212,170,.3); }
+    .theme-toggle { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface2); color: var(--text-sub); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Body ── */
+    .body { padding: 24px 28px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Week/nav strip ── */
+    .week-strip { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .week-strip-center { text-align: center; }
+    .week-strip-range { font-size: 15px; font-weight: 700; }
+    .week-strip-sub { font-size: 12px; color: var(--text-sub); }
+    .week-nav-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface2); color: var(--text-sub); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .week-nav-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .week-strip-stats { display: flex; gap: 20px; }
+    .w-stat { text-align: center; }
+    .w-stat-val { font-size: 18px; font-weight: 700; }
+    .w-stat-lbl { font-size: 11px; color: var(--text-sub); }
+
+    /* ── Two-col ── */
+    .two-col { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+
+    /* ── Section card ── */
+    .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .sc-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .sc-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .sc-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .sc-body { padding: 20px; }
+
+    /* AI badge */
+    .ai-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: linear-gradient(135deg,rgba(108,99,255,.2),rgba(0,212,170,.2)); border: 1px solid rgba(108,99,255,.3); color: var(--primary-l); font-weight: 600; }
+
+    /* Summary stats row */
+    .summary-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+    .ss-card { background: var(--surface2); border-radius: var(--radius-s); padding: 12px; text-align: center; }
+    .ss-val { font-size: 20px; font-weight: 700; }
+    .ss-lbl { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+    /* Ring */
+    .ring-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+    .ring-svg { width: 56px; height: 56px; flex-shrink: 0; }
+    .ring-bg   { fill: none; stroke: var(--border); stroke-width: 5; }
+    .ring-fill { fill: none; stroke-width: 5; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+    .ring-text { font-size: 13px; font-weight: 700; fill: var(--text); }
+
+    .ai-text { font-size: 14px; line-height: 1.8; background: var(--surface2); border-radius: var(--radius-s); padding: 14px 16px; border: 1px solid var(--border); white-space: pre-wrap; }
+
+    /* Task list */
+    .task-rows { display: flex; flex-direction: column; gap: 5px; margin-top: 14px; }
+    .task-row-sm { display: flex; align-items: center; gap: 10px; padding: 7px 11px; border-radius: var(--radius-s); background: var(--surface2); font-size: 13px; }
+    .tc { color: var(--accent); font-size: 12px; flex-shrink: 0; }
+    .tn { flex: 1; }
+    .tp { font-size: 10px; padding: 1px 7px; border-radius: 99px; font-weight: 500; }
+    .proj-a { background: rgba(108,99,255,.15); color: var(--primary-l); }
+    .proj-b { background: rgba(0,212,170,.12);  color: var(--accent); }
+    .tt { font-size: 12px; color: var(--text-sub); min-width: 38px; text-align: right; }
+
+    /* Comment sections */
+    .comment-block { margin-bottom: 20px; }
+    .comment-block:last-child { margin-bottom: 0; }
+    .c-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; color: var(--text); }
+    .c-text { font-size: 14px; line-height: 1.8; background: var(--surface2); border-radius: var(--radius-s); padding: 12px 14px; border: 1px solid var(--border); color: var(--text); }
+
+    /* Highlight concern */
+    .concern-tag {
+      display: inline-block; font-size: 10px; padding: 1px 7px;
+      border-radius: 99px; background: rgba(255,179,71,.15);
+      color: var(--warn); border: 1px solid rgba(255,179,71,.25);
+      margin-left: 6px; font-weight: 500;
+    }
+
+    /* ── Right col ── */
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Feedback card */
+    .feedback-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .fc-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+    .feedback-box {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-s); padding: 10px 12px;
+      font-size: 13px; color: var(--text); font-family: inherit;
+      line-height: 1.7; resize: vertical; outline: none; min-height: 120px;
+    }
+    .feedback-box:focus { border-color: var(--primary); }
+    .feedback-box::placeholder { color: var(--text-sub); }
+    .char-count { font-size: 11px; color: var(--text-sub); text-align: right; margin-top: 4px; margin-bottom: 12px; }
+    .btn-send-fb {
+      width: 100%; background: var(--primary); color: #fff;
+      border: none; padding: 11px; border-radius: var(--radius-s);
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: background .15s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .btn-send-fb:hover { background: var(--primary-l); }
+    .btn-mark-read {
+      width: 100%; background: transparent; color: var(--text-sub);
+      border: 1px solid var(--border); padding: 9px;
+      border-radius: var(--radius-s); font-size: 13px; cursor: pointer;
+      margin-top: 8px; transition: all .15s;
+    }
+    .btn-mark-read:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Member history */
+    .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .hc-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; }
+    .hc-list { display: flex; flex-direction: column; }
+    .hc-item { display: flex; align-items: center; gap: 12px; padding: 11px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; font-size: 13px; }
+    .hc-item:last-child { border-bottom: none; }
+    .hc-item:hover { background: var(--surface2); }
+    .hc-week { flex: 1; }
+    .hc-week-lbl { font-weight: 500; }
+    .hc-week-sub { font-size: 11px; color: var(--text-sub); }
+    .hc-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+    .hb-fb  { background: rgba(0,212,170,.15); color: var(--accent); }
+    .hb-ok  { background: var(--surface2); color: var(--text-sub); border: 1px solid var(--border); }
+    .hc-rate { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 40px; text-align: right; }
+
+    /* Trend mini chart */
+    .trend-row { display: flex; align-items: flex-end; gap: 6px; padding: 0 18px 16px; }
+    .trend-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .trend-bar { width: 100%; border-radius: 4px 4px 0 0; transition: height .4s; }
+    .trend-lbl { font-size: 10px; color: var(--text-sub); }
+    .trend-val { font-size: 10px; color: var(--text-sub); }
+
+    /* Notice banner */
+    .notice-banner {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,179,71,.08); border: 1px solid rgba(255,179,71,.25);
+      border-radius: var(--radius-s); padding: 10px 14px; font-size: 13px;
+    }
+    .notice-icon { font-size: 16px; flex-shrink: 0; }
+    .notice-text { flex: 1; line-height: 1.5; }
+    .notice-text strong { color: var(--warn); }
+
+    /* ── Reactions ── */
+    .reaction-section { margin-bottom: 14px; }
+    .reaction-label { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; }
+    .reaction-bar { display: flex; flex-wrap: wrap; gap: 7px; }
+    .reaction-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: 99px;
+      border: 1.5px solid var(--border);
+      background: var(--surface2);
+      font-size: 15px; cursor: pointer;
+      transition: all .15s; user-select: none;
+      position: relative;
+    }
+    .reaction-btn:hover { border-color: var(--primary); background: rgba(108,99,255,.08); transform: scale(1.06); }
+    .reaction-btn.active { border-color: var(--primary); background: rgba(108,99,255,.15); }
+    .reaction-btn.active .r-emoji { animation: pop .2s ease; }
+    .reaction-count { font-size: 12px; font-weight: 600; color: var(--text-sub); line-height: 1; }
+    .reaction-btn.active .reaction-count { color: var(--primary-l); }
+    .reaction-tooltip {
+      position: absolute; bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 4px 8px; font-size: 11px; color: var(--text-sub);
+      white-space: nowrap; pointer-events: none;
+      opacity: 0; transition: opacity .12s;
+    }
+    .reaction-btn:hover .reaction-tooltip { opacity: 1; }
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+
+    /* sent reactions display (read-only) */
+    .sent-reactions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .sent-reaction {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 99px;
+      border: 1.5px solid var(--primary);
+      background: rgba(108,99,255,.12);
+      font-size: 14px; color: var(--primary-l); font-weight: 600;
+    }
+    .sent-reaction .r-count { font-size: 12px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Sent flash */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 20px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; box-shadow: var(--shadow);
+      transform: translateY(80px); opacity: 0; transition: all .3s;
+      z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="logo"><div class="logo-icon">🔗</div>28teamworks</div>
+    <div class="role-chip">上長ビュー</div>
+    <div class="sidebar-section">メニュー</div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📋</span> チームダッシュボード</div>
+    <div class="nav-item active">
+      <span class="nav-icon">📬</span> 週報受信トレイ
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item" onclick="location.href='admin.html'"><span class="nav-icon">⚙️</span> 管理設定</div>
+    <div class="nav-item"><span class="nav-icon">📈</span> レポート分析</div>
+    <div class="sidebar-section" style="margin-top:12px">プロジェクト</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#6c63ff">●</span> Platform v2</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#00d4aa">●</span> モバイルアプリ</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#ffb347">●</span> 社内ツール改善</div>
+    <div class="sidebar-footer">
+      <div class="user-avatar-sm">田</div>
+      <div><div class="user-name">田村 修一</div><div class="user-role">部長</div></div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Header -->
+    <header class="header">
+      <a class="back-btn" href="manager-inbox.html">‹ 受信トレイ</a>
+      <div class="header-member">
+        <div class="member-avatar-lg" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+        <div class="header-member-info">
+          <h2>佐藤 美一</h2>
+          <p>プロジェクトリード　•　Platform v2　•　W18：4/27〜5/2</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="status-pill pill-unread" id="report-pill">未読</span>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="body">
+
+      <!-- Week strip -->
+      <div class="week-strip">
+        <button class="week-nav-btn">‹</button>
+        <div class="week-strip-center">
+          <div class="week-strip-range">W18：2026年 4/27（月）〜 5/2（土）</div>
+          <div class="week-strip-sub">提出日時：2026/5/1 18:32</div>
+        </div>
+        <div class="week-strip-stats">
+          <div class="w-stat"><div class="w-stat-val" style="color:var(--accent)">18</div><div class="w-stat-lbl">完了件数</div></div>
+          <div class="w-stat"><div class="w-stat-val">26.5h</div><div class="w-stat-lbl">作業時間</div></div>
+          <div class="w-stat"><div class="w-stat-val" style="color:var(--primary-l)">75%</div><div class="w-stat-lbl">完了率</div></div>
+        </div>
+        <button class="week-nav-btn" disabled>›</button>
+      </div>
+
+      <!-- Two col -->
+      <div class="two-col">
+
+        <!-- LEFT -->
+        <div style="display:flex;flex-direction:column;gap:20px">
+
+          <!-- AI Summary -->
+          <div class="section-card">
+            <div class="sc-header">
+              <div>
+                <div class="sc-title">🤖 AIによる作業サマリ <span class="ai-badge">✨ AI生成</span></div>
+                <div class="sc-sub">メンバーの今週の完了タスクをもとに自動生成</div>
+              </div>
+            </div>
+            <div class="sc-body">
+              <div class="summary-stats">
+                <div class="ss-card">
+                  <div class="ss-val" style="color:var(--accent)">18件</div>
+                  <div class="ss-lbl">完了タスク</div>
+                </div>
+                <div class="ss-card">
+                  <div class="ss-val">26.5h</div>
+                  <div class="ss-lbl">作業時間</div>
+                </div>
+                <div class="ss-card">
+                  <div class="ss-val" style="color:var(--primary-l)">75%</div>
+                  <div class="ss-lbl">完了率</div>
+                </div>
+              </div>
+              <div class="ai-text">今週（4/27〜5/1）は Platform v2 プロジェクトを中心に活動しました。
+
+週初めは要件定義フェーズの完了を優先し、月曜・火曜で要件定義書のレビューおよびステークホルダーへの合意取りを完了（計 4h）。水曜以降はスプリント計画フェーズへ移行し、スプリント計画書の作成（1.5h）とチームへの共有（1h）を実施しました。
+
+週次定例MTG（1h/回 × 4回）では進捗報告と課題共有を行い、チームの足並みを揃えました。バックエンドチームとの認証API仕様調整（2h）では、セキュリティ要件についての議論が深まり、仕様書への反映を完了しています。
+
+今週の作業時間は合計 26.5h で、計画比 95% の達成率となりました。</div>
+              <div class="task-rows">
+                <div class="task-row-sm"><span class="tc">✓</span><span class="tn">週次定例MTG × 4回</span><span class="tp proj-a">Platform v2</span><span class="tt">4h</span></div>
+                <div class="task-row-sm"><span class="tc">✓</span><span class="tn">要件定義レビュー・合意取り</span><span class="tp proj-a">Platform v2</span><span class="tt">4h</span></div>
+                <div class="task-row-sm"><span class="tc">✓</span><span class="tn">スプリント計画書作成・共有</span><span class="tp proj-a">Platform v2</span><span class="tt">2.5h</span></div>
+                <div class="task-row-sm"><span class="tc">✓</span><span class="tn">認証API仕様調整（バックエンド連携）</span><span class="tp proj-a">Platform v2</span><span class="tt">2h</span></div>
+                <div class="task-row-sm"><span class="tc">✓</span><span class="tn">モバイルUI ワイヤーフレームレビュー</span><span class="tp proj-b">モバイルアプリ</span><span class="tt">1.5h</span></div>
+                <div class="task-row-sm"><span class="tc">✓</span><span class="tn">チームメンバーへの1on1 × 3件</span><span class="tp proj-a">Platform v2</span><span class="tt">3h</span></div>
+                <div class="task-row-sm" style="opacity:.45"><span style="font-size:12px;color:var(--text-sub)">…</span><span class="tn" style="color:var(--text-sub)">他 12 件</span><span class="tt">9.5h</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Member comments -->
+          <div class="section-card">
+            <div class="sc-header">
+              <div class="sc-title">✍️ 佐藤さんの所感・追記</div>
+            </div>
+            <div class="sc-body">
+
+              <div class="comment-block">
+                <div class="c-label">💬 今週の所感</div>
+                <div class="c-text">今週は要件定義のフェーズが予定通り完了でき、チームの連携もスムーズでした。特にバックエンドとの仕様調整は事前に課題を整理していたおかげで短時間で合意できました。来週からスプリントが始まるので、引き続きリズムを維持していきたいです。</div>
+              </div>
+
+              <div class="comment-block">
+                <div class="c-label">🤔 疑問・気になった点 <span class="concern-tag">要確認</span></div>
+                <div class="c-text">認証APIのリフレッシュトークンの有効期限について、セキュリティポリシーとUXのバランスをどこに設定するか、上長の意見を聞きたい。</div>
+              </div>
+
+              <div class="comment-block">
+                <div class="c-label">🚧 課題・改善提案</div>
+                <div class="c-text">スプリントレビューの準備時間が毎回ギリギリになりがちなため、前日のバッファを意図的にスケジュールに組み込む運用を提案したい。</div>
+              </div>
+
+              <!-- Notice for concern -->
+              <div class="notice-banner">
+                <span class="notice-icon">⚠️</span>
+                <div class="notice-text"><strong>要確認事項あり：</strong>認証APIのリフレッシュトークン有効期限について方針を求めています。フィードバックで回答してください。</div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right-col">
+
+          <!-- Feedback card -->
+          <div class="feedback-card">
+            <div class="fc-title">💬 フィードバックを送る</div>
+
+            <!-- Reactions -->
+            <div class="reaction-section">
+              <div class="reaction-label">リアクション</div>
+              <div class="reaction-bar" id="reaction-bar">
+                <button class="reaction-btn" data-key="like"    onclick="toggleReaction(this)"><span class="r-emoji">👍</span><span class="reaction-count">0</span><div class="reaction-tooltip">よくできました</div></button>
+                <button class="reaction-btn" data-key="star"    onclick="toggleReaction(this)"><span class="r-emoji">⭐</span><span class="reaction-count">0</span><div class="reaction-tooltip">今週のベスト</div></button>
+                <button class="reaction-btn" data-key="heart"   onclick="toggleReaction(this)"><span class="r-emoji">❤️</span><span class="reaction-count">0</span><div class="reaction-tooltip">ありがとう</div></button>
+                <button class="reaction-btn" data-key="party"   onclick="toggleReaction(this)"><span class="r-emoji">🎉</span><span class="reaction-count">0</span><div class="reaction-tooltip">おめでとう</div></button>
+                <button class="reaction-btn" data-key="muscle"  onclick="toggleReaction(this)"><span class="r-emoji">💪</span><span class="reaction-count">0</span><div class="reaction-tooltip">引き続き頑張れ</div></button>
+                <button class="reaction-btn" data-key="idea"    onclick="toggleReaction(this)"><span class="r-emoji">💡</span><span class="reaction-count">0</span><div class="reaction-tooltip">参考になりました</div></button>
+              </div>
+            </div>
+
+            <textarea class="feedback-box" id="fb-text" rows="5"
+              placeholder="佐藤さんへのコメント・アドバイス・回答を入力してください（任意）"
+              oninput="document.getElementById('fb-count').textContent=this.value.length"></textarea>
+            <div class="char-count"><span id="fb-count">0</span> 文字</div>
+            <button class="btn-send-fb" onclick="sendFeedback()">
+              📨 フィードバックを送信
+            </button>
+            <button class="btn-mark-read" onclick="markRead()">
+              👁 既読にする
+            </button>
+          </div>
+
+          <!-- Member history -->
+          <div class="history-card">
+            <div class="hc-header">📁 佐藤さんの週報履歴</div>
+
+            <!-- Trend bars -->
+            <div class="trend-row">
+              <div class="trend-bar-wrap">
+                <div class="trend-val">85%</div>
+                <div class="trend-bar" style="height:46px;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+                <div class="trend-lbl">W14</div>
+              </div>
+              <div class="trend-bar-wrap">
+                <div class="trend-val">72%</div>
+                <div class="trend-bar" style="height:38px;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+                <div class="trend-lbl">W15</div>
+              </div>
+              <div class="trend-bar-wrap">
+                <div class="trend-val">90%</div>
+                <div class="trend-bar" style="height:48px;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+                <div class="trend-lbl">W16</div>
+              </div>
+              <div class="trend-bar-wrap">
+                <div class="trend-val">88%</div>
+                <div class="trend-bar" style="height:47px;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+                <div class="trend-lbl">W17</div>
+              </div>
+              <div class="trend-bar-wrap">
+                <div class="trend-val" style="color:var(--primary-l);font-weight:700">75%</div>
+                <div class="trend-bar" style="height:40px;background:linear-gradient(0deg,#00d4aa,#6c63ff)"></div>
+                <div class="trend-lbl" style="color:var(--primary-l);font-weight:600">W18</div>
+              </div>
+            </div>
+
+            <div class="hc-list">
+              <div class="hc-item">
+                <div class="hc-week"><div class="hc-week-lbl">W17：4/20〜4/26</div><div class="hc-week-sub">26件 / 28h</div></div>
+                <span class="hc-badge hb-fb">FB済</span>
+                <span class="hc-rate">88%</span>
+              </div>
+              <div class="hc-item">
+                <div class="hc-week"><div class="hc-week-lbl">W16：4/13〜4/19</div><div class="hc-week-sub">24件 / 26h</div></div>
+                <span class="hc-badge hb-ok">既読</span>
+                <span class="hc-rate">90%</span>
+              </div>
+              <div class="hc-item">
+                <div class="hc-week"><div class="hc-week-lbl">W15：4/6〜4/12</div><div class="hc-week-sub">20件 / 24h</div></div>
+                <span class="hc-badge hb-ok">既読</span>
+                <span class="hc-rate">72%</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /body -->
+  </div><!-- /main -->
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toast-icon">💬</span>
+  <span id="toast-msg">フィードバックを送信しました</span>
+</div>
+
+<script>
+  /* ─── Theme ─── */
+  const themeBtn = document.getElementById('theme-toggle');
+  let isDark = localStorage.getItem('theme') !== 'light';
+  function applyTheme() {
+    isDark ? document.documentElement.removeAttribute('data-theme') : document.documentElement.setAttribute('data-theme','light');
+    themeBtn.textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+  function toggleTheme() { isDark = !isDark; applyTheme(); }
+  applyTheme();
+
+  /* ─── Toast ─── */
+  function showToast(icon, msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-msg').textContent  = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  /* ─── Reactions ─── */
+  const REACTION_LABELS = { like:'よくできました', star:'今週のベスト', heart:'ありがとう', party:'おめでとう', muscle:'引き続き頑張れ', idea:'参考になりました' };
+  const reactionState = { like:0, star:0, heart:0, party:0, muscle:0, idea:0 };
+
+  function toggleReaction(btn) {
+    const key = btn.dataset.key;
+    const isActive = btn.classList.toggle('active');
+    reactionState[key] += isActive ? 1 : -1;
+    btn.querySelector('.reaction-count').textContent = reactionState[key];
+
+    // pop animation re-trigger
+    const emoji = btn.querySelector('.r-emoji');
+    if (isActive) {
+      emoji.style.animation = 'none';
+      requestAnimationFrame(() => { emoji.style.animation = ''; });
+    }
+  }
+
+  /* ─── Feedback ─── */
+  function sendFeedback() {
+    const activeReactions = Object.entries(reactionState).filter(([,v]) => v > 0);
+    const txt = document.getElementById('fb-text').value.trim();
+
+    if (!activeReactions.length && !txt) {
+      showToast('⚠️', 'リアクションかコメントを入力してください');
+      return;
+    }
+
+    // Freeze reaction bar → sent display
+    const bar = document.getElementById('reaction-bar');
+    if (activeReactions.length) {
+      const emojis = { like:'👍', star:'⭐', heart:'❤️', party:'🎉', muscle:'💪', idea:'💡' };
+      const sentHtml = activeReactions.map(([k]) =>
+        `<span class="sent-reaction" title="${REACTION_LABELS[k]}">${emojis[k]} <span class="r-count">${REACTION_LABELS[k]}</span></span>`
+      ).join('');
+      bar.outerHTML = `<div class="sent-reactions">${sentHtml}</div>`;
+    }
+
+    const pill = document.getElementById('report-pill');
+    pill.className = 'status-pill pill-replied';
+    pill.textContent = 'FB済み';
+    document.getElementById('fb-text').value = '';
+    document.getElementById('fb-count').textContent = '0';
+    showToast('💬', '佐藤さんにフィードバックを送信しました');
+  }
+
+  function markRead() {
+    const pill = document.getElementById('report-pill');
+    pill.className = 'status-pill';
+    pill.style.cssText = 'background:var(--surface2);color:var(--text-sub);border:1px solid var(--border)';
+    pill.textContent = '既読';
+    showToast('👁', '既読にしました');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>28teamworks – ダッシュボード</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Dark mode (default) */
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3248;
+      --primary:   #6c63ff;
+      --primary-l: #8b84ff;
+      --accent:    #00d4aa;
+      --warn:      #ffb347;
+      --danger:    #ff6b7a;
+      --text:      #e8eaf0;
+      --text-sub:  #8b90a7;
+      --radius:    12px;
+      --radius-s:  8px;
+      --shadow:    0 4px 24px rgba(0,0,0,.4);
+    }
+
+    /* Light mode */
+    [data-theme="light"] {
+      --bg:        #f0f2f9;
+      --surface:   #ffffff;
+      --surface2:  #f5f6fb;
+      --border:    #e3e6f0;
+      --primary:   #5b52ee;
+      --primary-l: #6c63ff;
+      --accent:    #00b896;
+      --warn:      #e09800;
+      --danger:    #e8445a;
+      --text:      #1a1d2e;
+      --text-sub:  #6b7280;
+      --shadow:    0 4px 24px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+      transition: background .25s, color .25s;
+    }
+
+    /* theme-sensitive transitions */
+    .sidebar, .header, .stat-card, .member-card,
+    .kanban-col, .kanban-card, .task-item,
+    .col-count, .view-toggle, .nav-item {
+      transition: background .25s, border-color .25s, color .25s;
+    }
+
+    /* ── Theme Toggle ── */
+    .theme-toggle {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-sub);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+    }
+    .logo {
+      padding: 0 20px 24px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary-l);
+      letter-spacing: .03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .sidebar-section {
+      padding: 8px 12px 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-sub);
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      font-size: 14px;
+      color: var(--text-sub);
+      cursor: pointer;
+      border-radius: 0;
+      transition: all .15s;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active {
+      color: var(--primary-l);
+      background: rgba(108,99,255,.1);
+      border-left-color: var(--primary);
+    }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6c63ff, #00d4aa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .user-info { overflow: hidden; }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .user-role { font-size: 11px; color: var(--text-sub); }
+
+    /* ── Main ── */
+    .main {
+      margin-left: 220px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left h1 { font-size: 18px; font-weight: 700; }
+    .header-left p { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    /* view toggle */
+    .view-toggle {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 3px;
+      gap: 2px;
+    }
+    .view-btn {
+      padding: 6px 14px;
+      font-size: 13px;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+    }
+    .view-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-s);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background .15s;
+    }
+    .btn-primary:hover { background: var(--primary-l); }
+
+    /* ── Body ── */
+    .body { padding: 24px 28px; flex: 1; }
+
+    /* ── Stats strip ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .stat-label { font-size: 12px; color: var(--text-sub); }
+    .stat-value { font-size: 22px; font-weight: 700; }
+
+    /* ── View panels ── */
+    .view-panel { display: none; }
+    .view-panel.active { display: block; }
+
+    /* ════════════════════
+       MEMBER VIEW
+    ════════════════════ */
+    .member-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .member-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    .member-card:hover { border-color: var(--primary); }
+
+    .member-card-header {
+      padding: 16px 18px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .member-meta { flex: 1; overflow: hidden; }
+    .member-name { font-size: 14px; font-weight: 600; }
+    .member-role { font-size: 12px; color: var(--text-sub); }
+    .progress-wrap {
+      width: 44px; text-align: right;
+    }
+    .progress-text { font-size: 11px; color: var(--text-sub); }
+    .progress-pct { font-size: 16px; font-weight: 700; color: var(--accent); }
+
+    .member-card-body { padding: 12px 18px 16px; }
+
+    .progress-bar-wrap {
+      background: var(--border);
+      border-radius: 4px;
+      height: 4px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .progress-bar { height: 100%; border-radius: 4px; }
+
+    .task-list { display: flex; flex-direction: column; gap: 6px; }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-s);
+      background: var(--surface2);
+      font-size: 13px;
+      position: relative;
+    }
+    .task-item.done { opacity: .55; }
+    .task-item.done .task-name { text-decoration: line-through; }
+
+    .task-check {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+    }
+    .task-check.done { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .task-name { flex: 1; }
+    .task-time {
+      font-size: 11px;
+      color: var(--text-sub);
+      white-space: nowrap;
+    }
+    .task-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 99px;
+      font-weight: 600;
+    }
+    .badge-pending { background: rgba(255,179,71,.15); color: var(--warn); }
+    .badge-done    { background: rgba(0,212,170,.15);  color: var(--accent); }
+    .badge-wip     { background: rgba(108,99,255,.15); color: var(--primary-l); }
+
+    .private-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: var(--radius-s);
+      border: 1px dashed var(--border);
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .member-footer {
+      padding: 10px 18px 14px;
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .member-stat { display: flex; align-items: center; gap: 4px; }
+
+    /* ════════════════════
+       KANBAN VIEW
+    ════════════════════ */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .kanban-col {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .kanban-col-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .col-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .col-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+    }
+    .col-count {
+      font-size: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 1px 8px;
+      border-radius: 99px;
+      color: var(--text-sub);
+    }
+    .kanban-col-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+    .kanban-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color .15s, transform .1s;
+    }
+    .kanban-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+
+    .kanban-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .kanban-task-name { font-size: 13px; font-weight: 500; line-height: 1.4; }
+    .kanban-card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .kanban-member {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .kanban-member .avatar { width: 22px; height: 22px; font-size: 10px; }
+    .kanban-time {
+      font-size: 11px;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── Tag chips ── */
+    .chip {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .chip-dev  { background: rgba(108,99,255,.18); color: var(--primary-l); }
+    .chip-biz  { background: rgba(0,212,170,.15); color: var(--accent); }
+    .chip-mtg  { background: rgba(255,107,122,.15); color: var(--danger); }
+    .chip-ops  { background: rgba(255,179,71,.15); color: var(--warn); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🔗</div>
+      28teamworks
+    </div>
+
+    <div class="sidebar-section">メニュー</div>
+    <div class="nav-item active"><span class="nav-icon">📋</span> ダッシュボード</div>
+    <div class="nav-item"><span class="nav-icon">✅</span> マイタスク</div>
+    <div class="nav-item"><span class="nav-icon">📊</span> 週間レポート</div>
+    <div class="nav-item" onclick="location.href='admin.html'"><span class="nav-icon">⚙️</span> 管理設定</div>
+
+    <div class="sidebar-section" style="margin-top:12px">プロジェクト</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#6c63ff">●</span> Platform v2</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#00d4aa">●</span> モバイルアプリ</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#ffb347">●</span> 社内ツール改善</div>
+
+    <div class="sidebar-footer">
+      <div class="user-avatar">佐</div>
+      <div class="user-info">
+        <div class="user-name">佐藤 美一</div>
+        <div class="user-role">プロジェクトリード</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>チームダッシュボード</h1>
+        <p>Platform v2　•　2026年5月1日（木）</p>
+      </div>
+      <div class="header-right">
+        <div class="view-toggle">
+          <button class="view-btn active" id="btn-member" onclick="switchView('member')">
+            <span>👤</span> メンバー別
+          </button>
+          <button class="view-btn" id="btn-kanban" onclick="switchView('kanban')">
+            <span>🗂</span> カンバン
+          </button>
+        </div>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="テーマ切替">🌙</button>
+        <button class="btn-primary">＋ タスク追加</button>
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="body">
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(108,99,255,.15)">📋</div>
+          <div>
+            <div class="stat-label">本日のタスク</div>
+            <div class="stat-value">24</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(0,212,170,.15)">✅</div>
+          <div>
+            <div class="stat-label">完了</div>
+            <div class="stat-value" style="color:var(--accent)">11</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(108,99,255,.15)">⚡</div>
+          <div>
+            <div class="stat-label">進行中</div>
+            <div class="stat-value" style="color:var(--primary-l)">8</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(255,179,71,.15)">⏳</div>
+          <div>
+            <div class="stat-label">未着手</div>
+            <div class="stat-value" style="color:var(--warn)">5</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ MEMBER VIEW ════ -->
+      <div class="view-panel active" id="panel-member">
+        <div class="member-grid">
+
+          <!-- Member: 佐藤 -->
+          <div class="member-card">
+            <div class="member-card-header">
+              <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+              <div class="member-meta">
+                <div class="member-name">佐藤 美一</div>
+                <div class="member-role">プロジェクトリード</div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-text">完了率</div>
+                <div class="progress-pct">67%</div>
+              </div>
+            </div>
+            <div class="member-card-body">
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width:67%;background:linear-gradient(90deg,#6c63ff,#00d4aa)"></div>
+              </div>
+              <div class="task-list">
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">週次定例MTG</span>
+                  <span class="task-time">1h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">要件定義レビュー</span>
+                  <span class="task-time">2h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item">
+                  <div class="task-check"></div>
+                  <span class="task-name">スプリント計画書作成</span>
+                  <span class="task-time">1.5h</span>
+                  <span class="task-badge badge-wip">進行中</span>
+                </div>
+              </div>
+            </div>
+            <div class="member-footer">
+              <span class="member-stat">⏱ 4.5h / 7h</span>
+              <span style="margin-left:auto;opacity:.5">🔒 非表示 1件</span>
+            </div>
+          </div>
+
+          <!-- Member: 田中 -->
+          <div class="member-card">
+            <div class="member-card-header">
+              <div class="avatar" style="background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+              <div class="member-meta">
+                <div class="member-name">田中 けい子</div>
+                <div class="member-role">フロントエンド</div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-text">完了率</div>
+                <div class="progress-pct">50%</div>
+              </div>
+            </div>
+            <div class="member-card-body">
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width:50%;background:linear-gradient(90deg,#00d4aa,#6c63ff)"></div>
+              </div>
+              <div class="task-list">
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">ダッシュボードUI実装</span>
+                  <span class="task-time">3h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item">
+                  <div class="task-check"></div>
+                  <span class="task-name">APIレスポンス型定義</span>
+                  <span class="task-time">1h</span>
+                  <span class="task-badge badge-wip">進行中</span>
+                </div>
+                <div class="task-item">
+                  <div class="task-check"></div>
+                  <span class="task-name">単体テスト作成</span>
+                  <span class="task-time">2h</span>
+                  <span class="task-badge badge-pending">未着手</span>
+                </div>
+              </div>
+            </div>
+            <div class="member-footer">
+              <span class="member-stat">⏱ 3h / 6h</span>
+            </div>
+          </div>
+
+          <!-- Member: 山田 -->
+          <div class="member-card">
+            <div class="member-card-header">
+              <div class="avatar" style="background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+              <div class="member-meta">
+                <div class="member-name">山田 拓也</div>
+                <div class="member-role">バックエンド</div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-text">完了率</div>
+                <div class="progress-pct">75%</div>
+              </div>
+            </div>
+            <div class="member-card-body">
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width:75%;background:linear-gradient(90deg,#ff6b7a,#ffb347)"></div>
+              </div>
+              <div class="task-list">
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">認証APIエンドポイント実装</span>
+                  <span class="task-time">3h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">DBマイグレーション</span>
+                  <span class="task-time">1h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">コードレビュー対応</span>
+                  <span class="task-time">0.5h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item">
+                  <div class="task-check"></div>
+                  <span class="task-name">E2Eテスト環境構築</span>
+                  <span class="task-time">2h</span>
+                  <span class="task-badge badge-pending">未着手</span>
+                </div>
+              </div>
+            </div>
+            <div class="member-footer">
+              <span class="member-stat">⏱ 4.5h / 6.5h</span>
+            </div>
+          </div>
+
+          <!-- Member: 鈴木 -->
+          <div class="member-card">
+            <div class="member-card-header">
+              <div class="avatar" style="background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+              <div class="member-meta">
+                <div class="member-name">鈴木 一郎</div>
+                <div class="member-role">デザイナー</div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-text">完了率</div>
+                <div class="progress-pct">33%</div>
+              </div>
+            </div>
+            <div class="member-card-body">
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width:33%;background:linear-gradient(90deg,#ffb347,#ff6b7a)"></div>
+              </div>
+              <div class="task-list">
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">ワイヤーフレーム修正</span>
+                  <span class="task-time">1.5h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item">
+                  <div class="task-check"></div>
+                  <span class="task-name">コンポーネントデザイン</span>
+                  <span class="task-time">3h</span>
+                  <span class="task-badge badge-wip">進行中</span>
+                </div>
+                <div class="task-item">
+                  <div class="task-check"></div>
+                  <span class="task-name">プロトタイプ作成</span>
+                  <span class="task-time">2h</span>
+                  <span class="task-badge badge-pending">未着手</span>
+                </div>
+              </div>
+              <div class="private-item" style="margin-top:8px">
+                <span>🔒</span> 非表示のタスクがあります
+              </div>
+            </div>
+            <div class="member-footer">
+              <span class="member-stat">⏱ 1.5h / 6.5h</span>
+            </div>
+          </div>
+
+          <!-- Member: 中村 -->
+          <div class="member-card">
+            <div class="member-card-header">
+              <div class="avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">中</div>
+              <div class="member-meta">
+                <div class="member-name">中村 さゆり</div>
+                <div class="member-role">QAエンジニア</div>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-text">完了率</div>
+                <div class="progress-pct">100%</div>
+              </div>
+            </div>
+            <div class="member-card-body">
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width:100%;background:linear-gradient(90deg,#00d4aa,#a855f7)"></div>
+              </div>
+              <div class="task-list">
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">テスト計画書作成</span>
+                  <span class="task-time">2h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+                <div class="task-item done">
+                  <div class="task-check done">✓</div>
+                  <span class="task-name">バグチケット整理</span>
+                  <span class="task-time">1h</span>
+                  <span class="task-badge badge-done">完了</span>
+                </div>
+              </div>
+            </div>
+            <div class="member-footer">
+              <span class="member-stat">⏱ 3h / 3h</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ════ KANBAN VIEW ════ -->
+      <div class="view-panel" id="panel-kanban">
+        <div class="kanban-board">
+
+          <!-- 未着手 -->
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <div class="col-title">
+                <div class="col-dot" style="background:#ffb347"></div>
+                未着手
+              </div>
+              <span class="col-count">5</span>
+            </div>
+            <div class="kanban-col-body">
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">単体テスト作成</div>
+                  <span class="chip chip-dev">開発</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+                    田中 けい子
+                  </div>
+                  <div class="kanban-time">⏱ 2h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">E2Eテスト環境構築</div>
+                  <span class="chip chip-dev">開発</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+                    山田 拓也
+                  </div>
+                  <div class="kanban-time">⏱ 2h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">プロトタイプ作成</div>
+                  <span class="chip chip-biz">デザイン</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+                    鈴木 一郎
+                  </div>
+                  <div class="kanban-time">⏱ 2h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">パフォーマンス計測</div>
+                  <span class="chip chip-ops">運用</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                    佐藤 美一
+                  </div>
+                  <div class="kanban-time">⏱ 1h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">ステージング環境確認</div>
+                  <span class="chip chip-ops">運用</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">中</div>
+                    中村 さゆり
+                  </div>
+                  <div class="kanban-time">⏱ 0.5h</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 進行中 -->
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <div class="col-title">
+                <div class="col-dot" style="background:#6c63ff"></div>
+                進行中
+              </div>
+              <span class="col-count">8</span>
+            </div>
+            <div class="kanban-col-body">
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">スプリント計画書作成</div>
+                  <span class="chip chip-biz">企画</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                    佐藤 美一
+                  </div>
+                  <div class="kanban-time">⏱ 1.5h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">APIレスポンス型定義</div>
+                  <span class="chip chip-dev">開発</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+                    田中 けい子
+                  </div>
+                  <div class="kanban-time">⏱ 1h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">コンポーネントデザイン</div>
+                  <span class="chip chip-biz">デザイン</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+                    鈴木 一郎
+                  </div>
+                  <div class="kanban-time">⏱ 3h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">Slackインテグレーション調査</div>
+                  <span class="chip chip-dev">開発</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+                    山田 拓也
+                  </div>
+                  <div class="kanban-time">⏱ 1.5h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name">週報テンプレート設計</div>
+                  <span class="chip chip-biz">企画</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                    佐藤 美一
+                  </div>
+                  <div class="kanban-time">⏱ 1h</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 完了 -->
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <div class="col-title">
+                <div class="col-dot" style="background:#00d4aa"></div>
+                完了
+              </div>
+              <span class="col-count">11</span>
+            </div>
+            <div class="kanban-col-body">
+
+              <div class="kanban-card" style="opacity:.7">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name" style="text-decoration:line-through">週次定例MTG</div>
+                  <span class="chip chip-mtg">MTG</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                    佐藤 美一
+                  </div>
+                  <div class="kanban-time">⏱ 1h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card" style="opacity:.7">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name" style="text-decoration:line-through">認証APIエンドポイント実装</div>
+                  <span class="chip chip-dev">開発</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+                    山田 拓也
+                  </div>
+                  <div class="kanban-time">⏱ 3h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card" style="opacity:.7">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name" style="text-decoration:line-through">ダッシュボードUI実装</div>
+                  <span class="chip chip-dev">開発</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+                    田中 けい子
+                  </div>
+                  <div class="kanban-time">⏱ 3h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card" style="opacity:.7">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name" style="text-decoration:line-through">テスト計画書作成</div>
+                  <span class="chip chip-ops">QA</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">中</div>
+                    中村 さゆり
+                  </div>
+                  <div class="kanban-time">⏱ 2h</div>
+                </div>
+              </div>
+
+              <div class="kanban-card" style="opacity:.7">
+                <div class="kanban-card-top">
+                  <div class="kanban-task-name" style="text-decoration:line-through">ワイヤーフレーム修正</div>
+                  <span class="chip chip-biz">デザイン</span>
+                </div>
+                <div class="kanban-card-meta">
+                  <div class="kanban-member">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+                    鈴木 一郎
+                  </div>
+                  <div class="kanban-time">⏱ 1.5h</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /body -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+  function switchView(view) {
+    document.getElementById('panel-member').classList.toggle('active', view === 'member');
+    document.getElementById('panel-kanban').classList.toggle('active', view === 'kanban');
+    document.getElementById('btn-member').classList.toggle('active', view === 'member');
+    document.getElementById('btn-kanban').classList.toggle('active', view === 'kanban');
+  }
+
+  const btn = document.getElementById('theme-toggle');
+  let isDark = localStorage.getItem('theme') !== 'light';
+
+  function applyTheme() {
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      btn.textContent = '🌙';
+      btn.title = 'ライトモードに切替';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      btn.textContent = '☀️';
+      btn.title = 'ダークモードに切替';
+    }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+
+  function toggleTheme() {
+    isDark = !isDark;
+    applyTheme();
+  }
+
+  applyTheme();
+</script>
+</body>
+</html>

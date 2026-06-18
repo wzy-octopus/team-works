@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>28teamworks – 週間レポート</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3248;
+      --primary:   #6c63ff;
+      --primary-l: #8b84ff;
+      --accent:    #00d4aa;
+      --warn:      #ffb347;
+      --danger:    #ff6b7a;
+      --text:      #e8eaf0;
+      --text-sub:  #8b90a7;
+      --radius:    12px;
+      --radius-s:  8px;
+      --shadow:    0 4px 24px rgba(0,0,0,.4);
+    }
+    [data-theme="light"] {
+      --bg:        #f0f2f9;
+      --surface:   #ffffff;
+      --surface2:  #f5f6fb;
+      --border:    #e3e6f0;
+      --primary:   #5b52ee;
+      --primary-l: #6c63ff;
+      --accent:    #00b896;
+      --warn:      #e09800;
+      --danger:    #e8445a;
+      --text:      #1a1d2e;
+      --text-sub:  #6b7280;
+      --shadow:    0 4px 24px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      transition: background .25s, color .25s;
+    }
+    .sidebar, .header, .card, .task-row-sm, .textarea-field, .input-field {
+      transition: background .25s, border-color .25s, color .25s;
+    }
+
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 24px 0;
+      position: fixed; top: 0; left: 0; height: 100vh;
+    }
+    .logo {
+      padding: 0 20px 24px;
+      font-size: 18px; font-weight: 700;
+      color: var(--primary-l); letter-spacing: .03em;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .sidebar-section {
+      padding: 8px 12px 4px; font-size: 11px;
+      text-transform: uppercase; letter-spacing: .1em; color: var(--text-sub);
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 20px; font-size: 14px; color: var(--text-sub);
+      cursor: pointer; transition: all .15s; border-left: 3px solid transparent;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--primary-l); background: rgba(108,99,255,.1); border-left-color: var(--primary); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer {
+      margin-top: auto; padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, #6c63ff, #00d4aa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .user-role { font-size: 11px; color: var(--text-sub); }
+
+    /* ── Main ── */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-left h1 { font-size: 18px; font-weight: 700; }
+    .header-left p { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    /* status pill */
+    .report-status {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 99px;
+      font-size: 12px; font-weight: 600;
+    }
+    .status-draft    { background: rgba(255,179,71,.15); color: var(--warn); border: 1px solid rgba(255,179,71,.3); }
+    .status-ready    { background: rgba(108,99,255,.15); color: var(--primary-l); border: 1px solid rgba(108,99,255,.3); }
+    .status-sent     { background: rgba(0,212,170,.15);  color: var(--accent); border: 1px solid rgba(0,212,170,.3); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    .theme-toggle {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text-sub); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Body ── */
+    .body { padding: 24px 28px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Week nav ── */
+    .week-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 20px;
+    }
+    .week-nav-center { text-align: center; }
+    .week-range { font-size: 16px; font-weight: 700; }
+    .week-label { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .week-nav-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text-sub); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .week-nav-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .week-nav-btn:disabled { opacity: .3; cursor: default; }
+    .week-tags { display: flex; gap: 8px; }
+    .week-tag {
+      font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 500;
+      background: var(--surface2); color: var(--text-sub); border: 1px solid var(--border);
+      cursor: pointer; transition: all .15s;
+    }
+    .week-tag.active { background: rgba(108,99,255,.15); color: var(--primary-l); border-color: rgba(108,99,255,.3); }
+
+    /* ── Two-column layout ── */
+    .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title {
+      font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; font-weight: 400; }
+    .card-body { padding: 20px; }
+    .card-footer {
+      padding: 14px 20px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* ── AI Summary ── */
+    .ai-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; padding: 2px 8px; border-radius: 99px;
+      background: linear-gradient(135deg, rgba(108,99,255,.2), rgba(0,212,170,.2));
+      border: 1px solid rgba(108,99,255,.3); color: var(--primary-l); font-weight: 600;
+    }
+    .ai-summary-text {
+      font-size: 14px; line-height: 1.8; color: var(--text);
+      background: var(--surface2); border-radius: var(--radius-s);
+      padding: 16px; border: 1px solid var(--border);
+      white-space: pre-wrap;
+    }
+    .ai-regen-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-sub); padding: 5px 12px;
+      border-radius: var(--radius-s); font-size: 12px; cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .ai-regen-btn:hover { border-color: var(--primary); color: var(--primary-l); }
+
+    /* ── Task summary table ── */
+    .task-summary-grid {
+      display: flex; flex-direction: column; gap: 6px; margin-top: 16px;
+    }
+    .task-row-sm {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: var(--radius-s);
+      background: var(--surface2); font-size: 13px;
+    }
+    .task-row-sm .check { color: var(--accent); font-size: 12px; flex-shrink: 0; }
+    .task-row-sm .t-name { flex: 1; }
+    .task-row-sm .t-proj {
+      font-size: 11px; padding: 1px 7px; border-radius: 99px; font-weight: 500;
+    }
+    .proj-a { background: rgba(108,99,255,.15); color: var(--primary-l); }
+    .proj-b { background: rgba(0,212,170,.12);  color: var(--accent); }
+    .proj-c { background: rgba(255,179,71,.15); color: var(--warn); }
+    .task-row-sm .t-time { font-size: 12px; color: var(--text-sub); min-width: 40px; text-align: right; }
+
+    .summary-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;
+    }
+    .summary-stat {
+      background: var(--surface2); border-radius: var(--radius-s);
+      padding: 12px; text-align: center;
+    }
+    .summary-stat-value { font-size: 20px; font-weight: 700; }
+    .summary-stat-label { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+    /* ── Comment sections ── */
+    .comment-sections { display: flex; flex-direction: column; gap: 16px; }
+    .comment-block {}
+    .comment-label {
+      font-size: 13px; font-weight: 600; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .comment-label-req {
+      font-size: 10px; color: var(--danger); font-weight: 400;
+    }
+    .textarea-field {
+      width: 100%; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius-s);
+      padding: 10px 12px; font-size: 13px; color: var(--text);
+      font-family: inherit; line-height: 1.7; resize: vertical; outline: none;
+      min-height: 80px;
+    }
+    .textarea-field:focus { border-color: var(--primary); }
+    .textarea-field::placeholder { color: var(--text-sub); }
+    .char-count { font-size: 11px; color: var(--text-sub); text-align: right; margin-top: 4px; }
+
+    /* ── Right panel ── */
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Send card */
+    .send-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .send-card-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+    .send-to {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: var(--surface2);
+      border-radius: var(--radius-s); margin-bottom: 14px;
+    }
+    .send-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #6c63ff, #a855f7);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .send-name { font-size: 13px; font-weight: 600; }
+    .send-role { font-size: 11px; color: var(--text-sub); }
+    .checklist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .check-item {
+      display: flex; align-items: center; gap: 8px; font-size: 13px;
+    }
+    .check-icon { font-size: 14px; flex-shrink: 0; }
+    .check-text { flex: 1; }
+    .check-text.pending { color: var(--text-sub); }
+    .btn-send {
+      width: 100%; background: var(--primary); color: #fff;
+      border: none; padding: 12px; border-radius: var(--radius-s);
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: background .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-send:hover { background: var(--primary-l); }
+    .btn-send:disabled { background: var(--border); color: var(--text-sub); cursor: default; }
+    .btn-save {
+      width: 100%; background: transparent; color: var(--text-sub);
+      border: 1px solid var(--border); padding: 9px;
+      border-radius: var(--radius-s); font-size: 13px; cursor: pointer;
+      margin-top: 8px; transition: all .15s;
+    }
+    .btn-save:hover { border-color: var(--primary); color: var(--primary-l); }
+
+    /* Past reports */
+    .past-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .past-header {
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 700;
+    }
+    .past-list { display: flex; flex-direction: column; }
+    .past-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 18px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .15s; font-size: 13px;
+    }
+    .past-item:last-child { border-bottom: none; }
+    .past-item:hover { background: var(--surface2); }
+    .past-week { flex: 1; font-weight: 500; }
+    .past-week-sub { font-size: 11px; color: var(--text-sub); }
+    .past-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500;
+    }
+    .past-sent   { background: rgba(0,212,170,.15);  color: var(--accent); }
+    .past-draft  { background: rgba(255,179,71,.15); color: var(--warn); }
+    .past-arrow  { color: var(--text-sub); font-size: 12px; }
+
+    /* Progress ring */
+    .progress-ring-wrap { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .ring-svg { width: 60px; height: 60px; flex-shrink: 0; }
+    .ring-bg   { fill: none; stroke: var(--border); stroke-width: 5; }
+    .ring-fill { fill: none; stroke-width: 5; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset .5s ease; }
+    .ring-text { font-size: 14px; font-weight: 700; fill: var(--text); }
+    .ring-info-label { font-size: 12px; color: var(--text-sub); }
+    .ring-info-value { font-size: 18px; font-weight: 700; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* sent overlay */
+    .sent-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .sent-overlay.show { display: flex; }
+    .sent-modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 40px; text-align: center; max-width: 380px;
+    }
+    .sent-icon { font-size: 52px; margin-bottom: 16px; }
+    .sent-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .sent-sub { font-size: 14px; color: var(--text-sub); margin-bottom: 24px; }
+    .btn-modal-close {
+      background: var(--primary); color: #fff;
+      border: none; padding: 10px 32px; border-radius: var(--radius-s);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="logo"><div class="logo-icon">🔗</div>28teamworks</div>
+    <div class="sidebar-section">メニュー</div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📋</span> ダッシュボード</div>
+    <div class="nav-item" onclick="location.href='mytasks.html'"><span class="nav-icon">✅</span> マイタスク</div>
+    <div class="nav-item active"><span class="nav-icon">📊</span> 週間レポート</div>
+    <div class="nav-item" onclick="location.href='admin.html'"><span class="nav-icon">⚙️</span> 管理設定</div>
+    <div class="sidebar-section" style="margin-top:12px">プロジェクト</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#6c63ff">●</span> Platform v2</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#00d4aa">●</span> モバイルアプリ</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#ffb347">●</span> 社内ツール改善</div>
+    <div class="sidebar-footer">
+      <div class="user-avatar">佐</div>
+      <div><div class="user-name">佐藤 美一</div><div class="user-role">プロジェクトリード</div></div>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>週間レポート</h1>
+        <p>Platform v2　•　W18：4/27（月）〜 5/2（土）</p>
+      </div>
+      <div class="header-right">
+        <div class="report-status status-draft" id="report-status">
+          <span class="status-dot"></span> 下書き
+        </div>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="テーマ切替">🌙</button>
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="body">
+
+      <!-- Week nav -->
+      <div class="week-nav">
+        <button class="week-nav-btn" onclick="changeWeek(-1)">‹</button>
+        <div class="week-nav-center">
+          <div class="week-range" id="week-range">2026年 4/27（月）〜 5/2（土）</div>
+          <div class="week-label">第18週　平成8年度第1四半期</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="week-tags">
+            <span class="week-tag active" onclick="selectProj(this,'all')">すべて</span>
+            <span class="week-tag" onclick="selectProj(this,'a')" style="color:#8b84ff">Platform v2</span>
+            <span class="week-tag" onclick="selectProj(this,'b')" style="color:#00b896">モバイルアプリ</span>
+          </div>
+          <button class="week-nav-btn" onclick="changeWeek(1)" disabled>›</button>
+        </div>
+      </div>
+
+      <!-- Two-col -->
+      <div class="two-col">
+
+        <!-- LEFT: Report content -->
+        <div style="display:flex;flex-direction:column;gap:20px">
+
+          <!-- AI Summary card -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">
+                  🤖 AIによる作業サマリ
+                  <span class="ai-badge">✨ AI生成</span>
+                </div>
+                <div class="card-title-sub">今週の完了タスクをもとに自動生成されました</div>
+              </div>
+              <button class="ai-regen-btn" onclick="regenSummary()">
+                <span id="regen-icon">↺</span> 再生成
+              </button>
+            </div>
+            <div class="card-body">
+              <!-- Ring + stats -->
+              <div class="progress-ring-wrap">
+                <svg class="ring-svg" viewBox="0 0 60 60">
+                  <circle class="ring-bg" cx="30" cy="30" r="26"/>
+                  <circle class="ring-fill" id="ring-fill"
+                    cx="30" cy="30" r="26"
+                    stroke="url(#ringGrad)"
+                    stroke-dasharray="163.4"
+                    stroke-dashoffset="40.8"/>
+                  <text class="ring-text" x="50%" y="54%" text-anchor="middle">75%</text>
+                  <defs>
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#6c63ff"/>
+                      <stop offset="100%" stop-color="#00d4aa"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div>
+                  <div class="ring-info-label">完了率</div>
+                  <div class="ring-info-value" style="color:var(--accent)">75%</div>
+                </div>
+                <div style="margin-left:12px">
+                  <div class="ring-info-label">合計作業時間</div>
+                  <div class="ring-info-value">26.5h</div>
+                </div>
+                <div style="margin-left:12px">
+                  <div class="ring-info-label">完了タスク</div>
+                  <div class="ring-info-value" style="color:var(--primary-l)">18 件</div>
+                </div>
+              </div>
+
+              <!-- AI text -->
+              <div class="ai-summary-text" id="ai-summary-text">今週（4/27〜5/1）は Platform v2 プロジェクトを中心に活動しました。
+
+週初めは要件定義フェーズの完了を優先し、月曜・火曜で要件定義書のレビューおよびステークホルダーへの合意取りを完了（計 4h）。水曜以降はスプリント計画フェーズへ移行し、スプリント計画書の作成（1.5h）とチームへの共有（1h）を実施しました。
+
+週次定例MTG（1h/回 × 4回）では進捗報告と課題共有を行い、チームの足並みを揃えました。バックエンドチームとの認証API仕様調整（2h）では、セキュリティ要件についての議論が深まり、仕様書への反映を完了しています。
+
+今週の作業時間は合計 26.5h で、計画比 95% の達成率となりました。</div>
+
+              <!-- Task list -->
+              <div class="task-summary-grid" id="task-summary-grid">
+                <div class="task-row-sm"><span class="check">✓</span><span class="t-name">週次定例MTG × 4回</span><span class="t-proj proj-a">Platform v2</span><span class="t-time">4h</span></div>
+                <div class="task-row-sm"><span class="check">✓</span><span class="t-name">要件定義レビュー・合意取り</span><span class="t-proj proj-a">Platform v2</span><span class="t-time">4h</span></div>
+                <div class="task-row-sm"><span class="check">✓</span><span class="t-name">スプリント計画書作成・共有</span><span class="t-proj proj-a">Platform v2</span><span class="t-time">2.5h</span></div>
+                <div class="task-row-sm"><span class="check">✓</span><span class="t-name">認証API仕様調整（バックエンド連携）</span><span class="t-proj proj-a">Platform v2</span><span class="t-time">2h</span></div>
+                <div class="task-row-sm"><span class="check">✓</span><span class="t-name">モバイルUI ワイヤーフレームレビュー</span><span class="t-proj proj-b">モバイルアプリ</span><span class="t-time">1.5h</span></div>
+                <div class="task-row-sm"><span class="check">✓</span><span class="t-name">チームメンバーへの1on1 × 3件</span><span class="t-proj proj-a">Platform v2</span><span class="t-time">3h</span></div>
+                <div class="task-row-sm" style="opacity:.45"><span style="font-size:12px;color:var(--text-sub)">…</span><span class="t-name" style="color:var(--text-sub)">他 12 件</span><span class="t-time">9.5h</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comment card -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">✍️ 自分の所感・追記</div>
+                <div class="card-title-sub">AIサマリに対して所感・疑問・課題を追記してください</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="comment-sections">
+
+                <div class="comment-block">
+                  <div class="comment-label">
+                    💬 今週の所感
+                    <span class="comment-label-req">必須</span>
+                  </div>
+                  <textarea class="textarea-field" id="field-feeling" rows="4"
+                    placeholder="今週を振り返って感じたこと、気づいたことを自由に書いてください"
+                    oninput="updateCharCount(this,'count-feeling');updateChecklist()">今週は要件定義のフェーズが予定通り完了でき、チームの連携もスムーズでした。特にバックエンドとの仕様調整は事前に課題を整理していたおかげで短時間で合意できました。来週からスプリントが始まるので、引き続きリズムを維持していきたいです。</textarea>
+                  <div class="char-count"><span id="count-feeling">136</span> 文字</div>
+                </div>
+
+                <div class="comment-block">
+                  <div class="comment-label">🤔 疑問・気になった点</div>
+                  <textarea class="textarea-field" id="field-questions" rows="3"
+                    placeholder="今週感じた疑問や、確認したいこと、判断できなかった点などを書いてください"
+                    oninput="updateCharCount(this,'count-questions');updateChecklist()">認証APIのリフレッシュトークンの有効期限について、セキュリティポリシーとUXのバランスをどこに設定するか、上長の意見を聞きたい。</textarea>
+                  <div class="char-count"><span id="count-questions">68</span> 文字</div>
+                </div>
+
+                <div class="comment-block">
+                  <div class="comment-label">🚧 課題・改善提案</div>
+                  <textarea class="textarea-field" id="field-issues" rows="3"
+                    placeholder="来週以降に対処すべき課題や、チーム・プロセスへの改善提案を書いてください"
+                    oninput="updateCharCount(this,'count-issues');updateChecklist()">スプリントレビューの準備時間が毎回ギリギリになりがちなため、前日のバッファを意図的にスケジュールに組み込む運用を提案したい。</textarea>
+                  <div class="char-count"><span id="count-issues">63</span> 文字</div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT col -->
+        <div class="right-col">
+
+          <!-- Send card -->
+          <div class="send-card">
+            <div class="send-card-title">📤 上長へ提出</div>
+            <div class="send-to">
+              <div class="send-avatar">田</div>
+              <div>
+                <div class="send-name">田村 修一 部長</div>
+                <div class="send-role">Platform v2 担当上長</div>
+              </div>
+            </div>
+            <div class="checklist" id="checklist">
+              <div class="check-item"><span class="check-icon">✅</span><span class="check-text">AIサマリ生成済み</span></div>
+              <div class="check-item"><span class="check-icon" id="chk-icon-feeling">✅</span><span class="check-text" id="chk-text-feeling">今週の所感を記入済み</span></div>
+              <div class="check-item"><span class="check-icon" id="chk-icon-questions">✅</span><span class="check-text" id="chk-text-questions">疑問・気になった点を記入済み</span></div>
+              <div class="check-item"><span class="check-icon" id="chk-icon-issues">✅</span><span class="check-text" id="chk-text-issues">課題・改善提案を記入済み</span></div>
+            </div>
+            <button class="btn-send" id="btn-send" onclick="sendReport()">
+              📨 週報を提出する
+            </button>
+            <button class="btn-save" onclick="saveAsDraft()">下書きとして保存</button>
+          </div>
+
+          <!-- Past reports -->
+          <div class="past-card">
+            <div class="past-header">📁 過去の週報</div>
+            <div class="past-list">
+              <div class="past-item">
+                <div>
+                  <div class="past-week">W17：4/20〜4/26</div>
+                  <div class="past-week-sub">26件 完了 / 28h</div>
+                </div>
+                <span class="past-badge past-sent">提出済</span>
+                <span class="past-arrow">›</span>
+              </div>
+              <div class="past-item">
+                <div>
+                  <div class="past-week">W16：4/13〜4/19</div>
+                  <div class="past-week-sub">22件 完了 / 25.5h</div>
+                </div>
+                <span class="past-badge past-sent">提出済</span>
+                <span class="past-arrow">›</span>
+              </div>
+              <div class="past-item">
+                <div>
+                  <div class="past-week">W15：4/6〜4/12</div>
+                  <div class="past-week-sub">19件 完了 / 23h</div>
+                </div>
+                <span class="past-badge past-sent">提出済</span>
+                <span class="past-arrow">›</span>
+              </div>
+              <div class="past-item">
+                <div>
+                  <div class="past-week">W14：3/30〜4/5</div>
+                  <div class="past-week-sub">15件 完了 / 20h</div>
+                </div>
+                <span class="past-badge past-draft">下書き</span>
+                <span class="past-arrow">›</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /body -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- Sent overlay -->
+<div class="sent-overlay" id="sent-overlay">
+  <div class="sent-modal">
+    <div class="sent-icon">🎉</div>
+    <div class="sent-title">週報を提出しました！</div>
+    <div class="sent-sub">田村 修一 部長に送信されました。<br>お疲れさまでした！</div>
+    <button class="btn-modal-close" onclick="closeSentModal()">ダッシュボードへ</button>
+  </div>
+</div>
+
+<script>
+  /* ─── Theme ─── */
+  const themeBtn = document.getElementById('theme-toggle');
+  let isDark = localStorage.getItem('theme') !== 'light';
+  function applyTheme() {
+    document.documentElement.toggleAttribute('data-theme', !isDark);
+    if (!isDark) document.documentElement.setAttribute('data-theme','light');
+    else document.documentElement.removeAttribute('data-theme');
+    themeBtn.textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+  function toggleTheme() { isDark = !isDark; applyTheme(); }
+  applyTheme();
+
+  /* ─── Week nav ─── */
+  const weeks = [
+    '2026年 4/6（月）〜 4/11（土）',
+    '2026年 4/13（月）〜 4/18（土）',
+    '2026年 4/20（月）〜 4/25（土）',
+    '2026年 4/27（月）〜 5/2（土）',
+  ];
+  let weekIdx = 3;
+  function changeWeek(d) {
+    weekIdx = Math.max(0, Math.min(weeks.length - 1, weekIdx + d));
+    document.getElementById('week-range').textContent = weeks[weekIdx];
+    document.querySelector('.week-nav-btn:last-of-type').disabled = weekIdx >= weeks.length - 1;
+    document.querySelector('.week-nav-btn:first-of-type').disabled = weekIdx <= 0;
+  }
+  document.querySelector('.week-nav-btn:first-of-type').disabled = false;
+
+  /* ─── Project filter ─── */
+  function selectProj(el, key) {
+    document.querySelectorAll('.week-tag').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  /* ─── Char count ─── */
+  function updateCharCount(el, countId) {
+    document.getElementById(countId).textContent = el.value.length;
+  }
+  ['feeling','questions','issues'].forEach(k => {
+    const el = document.getElementById('field-' + k);
+    if (el) updateCharCount(el, 'count-' + k);
+  });
+
+  /* ─── Checklist ─── */
+  function updateChecklist() {
+    const fields = ['feeling','questions','issues'];
+    let allOk = true;
+    fields.forEach(k => {
+      const val = document.getElementById('field-' + k).value.trim();
+      const ok = val.length > 0;
+      if (!ok) allOk = false;
+      document.getElementById('chk-icon-' + k).textContent = ok ? '✅' : '⬜';
+      document.getElementById('chk-text-' + k).classList.toggle('pending', !ok);
+    });
+    const statusEl = document.getElementById('report-status');
+    if (allOk) {
+      statusEl.className = 'report-status status-ready';
+      statusEl.innerHTML = '<span class="status-dot"></span> 提出可能';
+    } else {
+      statusEl.className = 'report-status status-draft';
+      statusEl.innerHTML = '<span class="status-dot"></span> 下書き';
+    }
+  }
+  updateChecklist();
+
+  /* ─── AI regen ─── */
+  const summaries = [
+    `今週（4/27〜5/1）は Platform v2 プロジェクトを中心に活動しました。
+
+週初めは要件定義フェーズの完了を優先し、月曜・火曜で要件定義書のレビューおよびステークホルダーへの合意取りを完了（計 4h）。水曜以降はスプリント計画フェーズへ移行し、スプリント計画書の作成（1.5h）とチームへの共有（1h）を実施しました。
+
+週次定例MTG（1h/回 × 4回）では進捗報告と課題共有を行い、チームの足並みを揃えました。バックエンドチームとの認証API仕様調整（2h）では、セキュリティ要件についての議論が深まり、仕様書への反映を完了しています。
+
+今週の作業時間は合計 26.5h で、計画比 95% の達成率となりました。`,
+    `W18（4/27〜5/1）の活動サマリです。
+
+本週は要件定義完了からスプリント立ち上げへのフェーズ移行が主なトピックでした。要件定義書レビューと関係者合意（4h）を週前半に集中させ、後半のスプリント計画（2.5h）へスムーズに接続できました。
+
+チームマネジメント面では 1on1 を 3 件実施（3h）し、各メンバーのコンディションと懸念事項を把握。モバイルアプリチームとの連携においてもワイヤーフレームレビュー（1.5h）を通じて方向性を揃えました。
+
+作業時間は 26.5h（計画比 95%）で、品質・スケジュールともに安定した週でした。`
+  ];
+  let summaryIdx = 0;
+  function regenSummary() {
+    const icon = document.getElementById('regen-icon');
+    icon.style.transform = 'rotate(360deg)';
+    icon.style.transition = 'transform .4s';
+    setTimeout(() => { icon.style.transform = ''; icon.style.transition = ''; }, 400);
+    summaryIdx = (summaryIdx + 1) % summaries.length;
+    document.getElementById('ai-summary-text').textContent = summaries[summaryIdx];
+  }
+
+  /* ─── Send ─── */
+  function sendReport() {
+    document.getElementById('sent-overlay').classList.add('show');
+    const statusEl = document.getElementById('report-status');
+    statusEl.className = 'report-status status-sent';
+    statusEl.innerHTML = '<span class="status-dot"></span> 提出済み';
+  }
+  function closeSentModal() {
+    document.getElementById('sent-overlay').classList.remove('show');
+  }
+
+  function saveAsDraft() {
+    const btn = document.querySelector('.btn-save');
+    btn.textContent = '✓ 保存しました';
+    setTimeout(() => { btn.textContent = '下書きとして保存'; }, 1800);
+  }
+</script>
+</body>
+</html>

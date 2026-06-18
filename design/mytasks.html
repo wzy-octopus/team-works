@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>28teamworks – マイタスク</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3248;
+      --primary:   #6c63ff;
+      --primary-l: #8b84ff;
+      --accent:    #00d4aa;
+      --warn:      #ffb347;
+      --danger:    #ff6b7a;
+      --text:      #e8eaf0;
+      --text-sub:  #8b90a7;
+      --radius:    12px;
+      --radius-s:  8px;
+      --shadow:    0 4px 24px rgba(0,0,0,.4);
+    }
+    [data-theme="light"] {
+      --bg:        #f0f2f9;
+      --surface:   #ffffff;
+      --surface2:  #f5f6fb;
+      --border:    #e3e6f0;
+      --primary:   #5b52ee;
+      --primary-l: #6c63ff;
+      --accent:    #00b896;
+      --warn:      #e09800;
+      --danger:    #e8445a;
+      --text:      #1a1d2e;
+      --text-sub:  #6b7280;
+      --shadow:    0 4px 24px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+      transition: background .25s, color .25s;
+    }
+    .sidebar, .header, .stat-card, .card,
+    .task-row, .input-area, .filter-bar {
+      transition: background .25s, border-color .25s, color .25s;
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+    }
+    .logo {
+      padding: 0 20px 24px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary-l);
+      letter-spacing: .03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .sidebar-section {
+      padding: 8px 12px 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-sub);
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      font-size: 14px;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all .15s;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active {
+      color: var(--primary-l);
+      background: rgba(108,99,255,.1);
+      border-left-color: var(--primary);
+    }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6c63ff, #00d4aa);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .user-role { font-size: 11px; color: var(--text-sub); }
+
+    /* ── Main ── */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-left h1 { font-size: 18px; font-weight: 700; }
+    .header-left p { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .theme-toggle {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-sub);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-s);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background .15s;
+    }
+    .btn-primary:hover { background: var(--primary-l); }
+
+    /* ── Body ── */
+    .body { padding: 24px 28px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Stats ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .stat-label { font-size: 12px; color: var(--text-sub); }
+    .stat-value { font-size: 22px; font-weight: 700; }
+
+    /* ── Input area ── */
+    .input-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .input-area-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .input-group label {
+      font-size: 11px;
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+    .input-field {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s, background .25s;
+    }
+    .input-field:focus { border-color: var(--primary); }
+    .input-field::placeholder { color: var(--text-sub); }
+    .input-task { width: 340px; }
+    .input-time { width: 100px; }
+    .input-project { width: 160px; }
+    select.input-field {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b90a7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    .input-private {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-sub);
+      cursor: pointer;
+      padding: 8px 4px;
+      user-select: none;
+    }
+    .input-private input { display: none; }
+    .input-private .toggle-dot {
+      width: 36px; height: 20px;
+      border-radius: 10px;
+      background: var(--border);
+      position: relative;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .input-private .toggle-dot::after {
+      content: '';
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      top: 3px; left: 3px;
+      transition: left .2s;
+    }
+    .input-private input:checked ~ .toggle-dot { background: var(--primary); }
+    .input-private input:checked ~ .toggle-dot::after { left: 19px; }
+    .btn-add {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: var(--radius-s);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+      align-self: flex-end;
+    }
+    .btn-add:hover { background: var(--primary-l); }
+
+    /* ── AI入力バナー ── */
+    .ai-hint {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: rgba(108,99,255,.08);
+      border: 1px solid rgba(108,99,255,.2);
+      border-radius: var(--radius-s);
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .ai-hint strong { color: var(--primary-l); }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 3px;
+    }
+    .filter-tab {
+      padding: 6px 14px;
+      font-size: 13px;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      transition: all .15s;
+    }
+    .filter-tab.active { background: var(--primary); color: #fff; }
+    .filter-tab .tab-count {
+      font-size: 10px;
+      background: rgba(255,255,255,.2);
+      padding: 1px 5px;
+      border-radius: 99px;
+    }
+    .filter-tab:not(.active) .tab-count {
+      background: var(--surface2);
+      color: var(--text-sub);
+    }
+    .filter-right { display: flex; align-items: center; gap: 10px; }
+    .sort-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 6px 28px 6px 10px;
+      font-size: 12px;
+      color: var(--text-sub);
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b90a7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      transition: background .25s, border-color .25s;
+    }
+    .progress-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .bar-mini {
+      width: 100px; height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-mini-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+
+    /* ── Task list ── */
+    .task-section { display: flex; flex-direction: column; gap: 6px; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-sub);
+      padding: 4px 0 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .task-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color .15s, background .25s;
+      position: relative;
+    }
+    .task-row:hover { border-color: var(--primary); }
+    .task-row.is-done { opacity: .55; }
+    .task-row.is-private { border-left: 3px solid var(--primary); padding-left: 13px; }
+
+    /* checkbox */
+    .check-btn {
+      width: 20px; height: 20px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all .15s;
+      background: transparent;
+    }
+    .check-btn:hover { border-color: var(--accent); }
+    .check-btn.done { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .check-btn.wip  { background: rgba(108,99,255,.2); border-color: var(--primary); color: var(--primary-l); }
+
+    /* task info */
+    .task-info { flex: 1; min-width: 0; }
+    .task-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .task-row.is-done .task-name { text-decoration: line-through; }
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .task-project {
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 99px;
+      font-weight: 500;
+    }
+    .proj-a { background: rgba(108,99,255,.15); color: var(--primary-l); }
+    .proj-b { background: rgba(0,212,170,.12); color: var(--accent); }
+    .proj-c { background: rgba(255,179,71,.15); color: var(--warn); }
+    .task-created { font-size: 11px; color: var(--text-sub); }
+
+    /* right side */
+    .task-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    .time-block {
+      text-align: right;
+      min-width: 54px;
+    }
+    .time-est {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .time-label { font-size: 10px; color: var(--text-sub); }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-weight: 600;
+      min-width: 58px;
+      text-align: center;
+    }
+    .badge-todo { background: rgba(255,179,71,.15); color: var(--warn); }
+    .badge-wip  { background: rgba(108,99,255,.15); color: var(--primary-l); }
+    .badge-done { background: rgba(0,212,170,.15);  color: var(--accent); }
+
+    .private-icon {
+      font-size: 14px;
+      color: var(--text-sub);
+      opacity: .6;
+    }
+    .task-row.is-private .private-icon { opacity: 1; color: var(--primary-l); }
+
+    .action-menu {
+      display: flex;
+      gap: 2px;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .task-row:hover .action-menu { opacity: 1; }
+    .action-btn {
+      width: 28px; height: 28px;
+      border: none;
+      background: var(--surface2);
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-sub);
+      transition: all .15s;
+    }
+    .action-btn:hover { background: var(--border); color: var(--text); }
+    .action-btn.del:hover { background: rgba(255,107,122,.15); color: var(--danger); }
+
+    /* ── Weekly preview ── */
+    .weekly-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .weekly-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .weekly-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .weekly-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-sub);
+      padding: 5px 12px;
+      border-radius: var(--radius-s);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary-l); }
+    .week-days {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    .day-col { display: flex; flex-direction: column; gap: 4px; }
+    .day-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      text-align: center;
+      font-weight: 500;
+    }
+    .day-label.today { color: var(--primary-l); font-weight: 700; }
+    .day-bar-wrap {
+      height: 60px;
+      background: var(--surface2);
+      border-radius: 6px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      position: relative;
+    }
+    .day-bar {
+      width: 100%;
+      border-radius: 6px 6px 0 0;
+      transition: height .4s ease;
+    }
+    .day-hours {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .day-hours.today { color: var(--primary-l); font-weight: 600; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🔗</div>
+      28teamworks
+    </div>
+    <div class="sidebar-section">メニュー</div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📋</span> ダッシュボード</div>
+    <div class="nav-item active"><span class="nav-icon">✅</span> マイタスク</div>
+    <div class="nav-item"><span class="nav-icon">📊</span> 週間レポート</div>
+    <div class="nav-item" onclick="location.href='admin.html'"><span class="nav-icon">⚙️</span> 管理設定</div>
+    <div class="sidebar-section" style="margin-top:12px">プロジェクト</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#6c63ff">●</span> Platform v2</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#00d4aa">●</span> モバイルアプリ</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#ffb347">●</span> 社内ツール改善</div>
+    <div class="sidebar-footer">
+      <div class="user-avatar">佐</div>
+      <div>
+        <div class="user-name">佐藤 美一</div>
+        <div class="user-role">プロジェクトリード</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>マイタスク</h1>
+        <p>2026年5月1日（木）</p>
+      </div>
+      <div class="header-right">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="テーマ切替">🌙</button>
+        <button class="btn-primary" onclick="focusInput()">＋ タスク追加</button>
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="body">
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(108,99,255,.15)">📋</div>
+          <div>
+            <div class="stat-label">本日のタスク</div>
+            <div class="stat-value" id="stat-total">4</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(0,212,170,.15)">✅</div>
+          <div>
+            <div class="stat-label">完了</div>
+            <div class="stat-value" style="color:var(--accent)" id="stat-done">2</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(108,99,255,.15)">⚡</div>
+          <div>
+            <div class="stat-label">予定時間 合計</div>
+            <div class="stat-value" style="color:var(--primary-l)" id="stat-hours">7h</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(255,107,122,.15)">🔒</div>
+          <div>
+            <div class="stat-label">非表示タスク</div>
+            <div class="stat-value" style="color:var(--text-sub)" id="stat-private">1</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="input-area">
+        <div class="input-area-title">➕ 今日やることを追加</div>
+        <div class="input-row">
+          <div class="input-group" style="flex:1">
+            <label>タスク名</label>
+            <input id="new-task-name" class="input-field input-task" type="text" placeholder="例：要件定義書のレビュー" />
+          </div>
+          <div class="input-group">
+            <label>予定時間</label>
+            <input id="new-task-time" class="input-field input-time" type="text" placeholder="例：1.5h" />
+          </div>
+          <div class="input-group">
+            <label>プロジェクト</label>
+            <select id="new-task-project" class="input-field input-project">
+              <option value="a">Platform v2</option>
+              <option value="b">モバイルアプリ</option>
+              <option value="c">社内ツール改善</option>
+            </select>
+          </div>
+          <label class="input-private">
+            <input type="checkbox" id="new-task-private">
+            <span class="toggle-dot"></span>
+            <span>非表示</span>
+          </label>
+          <button class="btn-add" onclick="addTask()">追加</button>
+        </div>
+        <div class="ai-hint">
+          💬 <span><strong>AI・チャット連携：</strong>「今日は要件定義2時間、コードレビュー1時間やります」と送るだけで自動登録されます</span>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="filterTasks('all', this)">
+            すべて <span class="tab-count" id="count-all">4</span>
+          </button>
+          <button class="filter-tab" onclick="filterTasks('todo', this)">
+            未着手 <span class="tab-count" id="count-todo">1</span>
+          </button>
+          <button class="filter-tab" onclick="filterTasks('wip', this)">
+            進行中 <span class="tab-count" id="count-wip">1</span>
+          </button>
+          <button class="filter-tab" onclick="filterTasks('done', this)">
+            完了 <span class="tab-count" id="count-done">2</span>
+          </button>
+        </div>
+        <div class="filter-right">
+          <div class="progress-summary">
+            <span id="prog-text">2 / 4 完了</span>
+            <div class="bar-mini">
+              <div class="bar-mini-fill" id="prog-bar" style="width:50%"></div>
+            </div>
+          </div>
+          <select class="sort-select" onchange="sortTasks(this.value)">
+            <option value="default">登録順</option>
+            <option value="status">ステータス順</option>
+            <option value="time">時間順</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Task list -->
+      <div id="task-list" class="task-section"></div>
+
+      <!-- Weekly preview -->
+      <div class="weekly-card">
+        <div class="weekly-header">
+          <div>
+            <div class="weekly-title">📅 今週の作業時間</div>
+            <div class="weekly-sub">4/27（月）〜 5/1（木） — 合計 26.5h</div>
+          </div>
+          <button class="btn-ghost" onclick="location.href='weekly-report.html'">週報を作成 →</button>
+        </div>
+        <div class="week-days">
+          <div class="day-col">
+            <div class="day-label">月 4/27</div>
+            <div class="day-bar-wrap">
+              <div class="day-bar" style="height:85%;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+            </div>
+            <div class="day-hours">7.0h</div>
+          </div>
+          <div class="day-col">
+            <div class="day-label">火 4/28</div>
+            <div class="day-bar-wrap">
+              <div class="day-bar" style="height:70%;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+            </div>
+            <div class="day-hours">5.5h</div>
+          </div>
+          <div class="day-col">
+            <div class="day-label">水 4/29</div>
+            <div class="day-bar-wrap">
+              <div class="day-bar" style="height:75%;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+            </div>
+            <div class="day-hours">6.5h</div>
+          </div>
+          <div class="day-col">
+            <div class="day-label">木 4/30</div>
+            <div class="day-bar-wrap">
+              <div class="day-bar" style="height:90%;background:linear-gradient(0deg,#6c63ff,#8b84ff)"></div>
+            </div>
+            <div class="day-hours">7.5h</div>
+          </div>
+          <div class="day-col">
+            <div class="day-label today">金 5/1 今日</div>
+            <div class="day-bar-wrap">
+              <div class="day-bar" style="height:42%;background:linear-gradient(0deg,#00d4aa,#6c63ff)"></div>
+            </div>
+            <div class="day-hours today">3.5h</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /body -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+  /* ─── Data ─── */
+  const PROJ = {
+    a: { label: 'Platform v2',   cls: 'proj-a' },
+    b: { label: 'モバイルアプリ', cls: 'proj-b' },
+    c: { label: '社内ツール改善', cls: 'proj-c' },
+  };
+
+  let tasks = [
+    { id: 1, name: '週次定例MTG',         time: '1h',   status: 'done', project: 'a', private: false, created: '08:30' },
+    { id: 2, name: '要件定義レビュー',     time: '2h',   status: 'done', project: 'a', private: false, created: '09:00' },
+    { id: 3, name: 'スプリント計画書作成', time: '1.5h', status: 'wip',  project: 'a', private: false, created: '11:00' },
+    { id: 4, name: '個人メモ整理',         time: '0.5h', status: 'todo', project: 'a', private: true,  created: '12:00' },
+    { id: 5, name: 'パフォーマンス計測',   time: '2h',   status: 'todo', project: 'b', private: false, created: '13:00' },
+  ];
+  let nextId = 6;
+  let currentFilter = 'all';
+
+  /* ─── Render ─── */
+  function render() {
+    const list = document.getElementById('task-list');
+    const filtered = currentFilter === 'all'
+      ? tasks
+      : tasks.filter(t => t.status === currentFilter);
+
+    const todo = tasks.filter(t => t.status === 'todo');
+    const wip  = tasks.filter(t => t.status === 'wip');
+    const done = tasks.filter(t => t.status === 'done');
+    const priv = tasks.filter(t => t.private);
+
+    // Stats
+    document.getElementById('stat-total').textContent   = tasks.length;
+    document.getElementById('stat-done').textContent    = done.length;
+    document.getElementById('stat-private').textContent = priv.length;
+
+    const totalH = tasks.reduce((s, t) => s + parseFloat(t.time), 0);
+    document.getElementById('stat-hours').textContent = totalH % 1 === 0 ? totalH + 'h' : totalH + 'h';
+
+    // Counts
+    document.getElementById('count-all').textContent  = tasks.length;
+    document.getElementById('count-todo').textContent = todo.length;
+    document.getElementById('count-wip').textContent  = wip.length;
+    document.getElementById('count-done').textContent = done.length;
+
+    // Progress bar
+    const pct = tasks.length ? Math.round(done.length / tasks.length * 100) : 0;
+    document.getElementById('prog-bar').style.width = pct + '%';
+    document.getElementById('prog-text').textContent = done.length + ' / ' + tasks.length + ' 完了';
+
+    // Build HTML
+    list.innerHTML = '';
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-sub);font-size:14px">タスクはありません</div>`;
+      return;
+    }
+
+    // Group by status when showing all
+    if (currentFilter === 'all') {
+      const groups = [
+        { key: 'wip',  label: '進行中', dot: 'var(--primary-l)', items: wip },
+        { key: 'todo', label: '未着手', dot: 'var(--warn)',       items: todo },
+        { key: 'done', label: '完了',   dot: 'var(--accent)',     items: done },
+      ];
+      groups.forEach(g => {
+        if (!g.items.length) return;
+        const sec = document.createElement('div');
+        sec.className = 'task-section';
+        sec.innerHTML = `<div class="section-label"><span style="width:7px;height:7px;border-radius:50%;background:${g.dot};display:inline-block"></span>${g.label}（${g.items.length}）</div>`;
+        g.items.forEach(t => sec.appendChild(makeRow(t)));
+        list.appendChild(sec);
+      });
+    } else {
+      filtered.forEach(t => list.appendChild(makeRow(t)));
+    }
+  }
+
+  function makeRow(t) {
+    const row = document.createElement('div');
+    row.className = 'task-row' + (t.status === 'done' ? ' is-done' : '') + (t.private ? ' is-private' : '');
+    row.dataset.id = t.id;
+
+    const proj = PROJ[t.project];
+    const checkClass = t.status === 'done' ? 'done' : t.status === 'wip' ? 'wip' : '';
+    const checkIcon  = t.status === 'done' ? '✓'   : t.status === 'wip' ? '⋯'  : '';
+    const badgeCls   = t.status === 'done' ? 'badge-done' : t.status === 'wip' ? 'badge-wip' : 'badge-todo';
+    const badgeTxt   = t.status === 'done' ? '完了'       : t.status === 'wip' ? '進行中'    : '未着手';
+
+    row.innerHTML = `
+      <button class="check-btn ${checkClass}" onclick="cycleStatus(${t.id}, event)">${checkIcon}</button>
+      <div class="task-info">
+        <div class="task-name">${escHtml(t.name)}</div>
+        <div class="task-meta">
+          <span class="task-project ${proj.cls}">${proj.label}</span>
+          <span class="task-created">${t.created} 登録</span>
+        </div>
+      </div>
+      <div class="task-right">
+        <div class="time-block">
+          <div class="time-est">${t.time}</div>
+          <div class="time-label">予定</div>
+        </div>
+        <span class="status-badge ${badgeCls}">${badgeTxt}</span>
+        <span class="private-icon" title="${t.private ? '非表示中（自分のみ表示）' : '公開中'}"
+              onclick="togglePrivate(${t.id}, event)">${t.private ? '🔒' : '👁'}</span>
+        <div class="action-menu">
+          <button class="action-btn" title="編集" onclick="editTask(${t.id}, event)">✏️</button>
+          <button class="action-btn del" title="削除" onclick="deleteTask(${t.id}, event)">🗑</button>
+        </div>
+      </div>`;
+    return row;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ─── Actions ─── */
+  function cycleStatus(id, e) {
+    e.stopPropagation();
+    const t = tasks.find(x => x.id === id);
+    t.status = t.status === 'todo' ? 'wip' : t.status === 'wip' ? 'done' : 'todo';
+    render();
+  }
+
+  function togglePrivate(id, e) {
+    e.stopPropagation();
+    const t = tasks.find(x => x.id === id);
+    t.private = !t.private;
+    render();
+  }
+
+  function deleteTask(id, e) {
+    e.stopPropagation();
+    tasks = tasks.filter(x => x.id !== id);
+    render();
+  }
+
+  function editTask(id, e) {
+    e.stopPropagation();
+    const t = tasks.find(x => x.id === id);
+    const name = prompt('タスク名を編集', t.name);
+    if (name !== null && name.trim()) { t.name = name.trim(); render(); }
+  }
+
+  function addTask() {
+    const nameEl    = document.getElementById('new-task-name');
+    const timeEl    = document.getElementById('new-task-time');
+    const projEl    = document.getElementById('new-task-project');
+    const privateEl = document.getElementById('new-task-private');
+
+    const name = nameEl.value.trim();
+    if (!name) { nameEl.focus(); return; }
+
+    const now = new Date();
+    const hhmm = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+    tasks.unshift({
+      id: nextId++,
+      name,
+      time:    timeEl.value.trim() || '—',
+      status:  'todo',
+      project: projEl.value,
+      private: privateEl.checked,
+      created: hhmm,
+    });
+
+    nameEl.value = '';
+    timeEl.value = '';
+    privateEl.checked = false;
+    currentFilter = 'all';
+    document.querySelectorAll('.filter-tab').forEach((b,i) => b.classList.toggle('active', i === 0));
+    render();
+  }
+
+  function focusInput() {
+    document.getElementById('new-task-name').focus();
+    document.querySelector('.input-area').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function filterTasks(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  function sortTasks(by) {
+    if (by === 'status') {
+      const order = { wip: 0, todo: 1, done: 2 };
+      tasks.sort((a, b) => order[a.status] - order[b.status]);
+    } else if (by === 'time') {
+      tasks.sort((a, b) => parseFloat(b.time) - parseFloat(a.time));
+    } else {
+      tasks.sort((a, b) => a.id - b.id);
+    }
+    render();
+  }
+
+  document.getElementById('new-task-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  /* ─── Theme ─── */
+  const themeBtn = document.getElementById('theme-toggle');
+  let isDark = localStorage.getItem('theme') !== 'light';
+  function applyTheme() {
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      themeBtn.textContent = '🌙';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeBtn.textContent = '☀️';
+    }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+  function toggleTheme() { isDark = !isDark; applyTheme(); }
+  applyTheme();
+
+  render();
+</script>
+</body>
+</html>

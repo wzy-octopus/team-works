@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>28teamworks – 管理設定</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3248;
+      --primary:   #6c63ff;
+      --primary-l: #8b84ff;
+      --accent:    #00d4aa;
+      --warn:      #ffb347;
+      --danger:    #ff6b7a;
+      --text:      #e8eaf0;
+      --text-sub:  #8b90a7;
+      --radius:    12px;
+      --radius-s:  8px;
+    }
+    [data-theme="light"] {
+      --bg:        #f0f2f9;
+      --surface:   #ffffff;
+      --surface2:  #f5f6fb;
+      --border:    #e3e6f0;
+      --primary:   #5b52ee;
+      --primary-l: #6c63ff;
+      --accent:    #00b896;
+      --warn:      #e09800;
+      --danger:    #e8445a;
+      --text:      #1a1d2e;
+      --text-sub:  #6b7280;
+    }
+    body { font-family: 'Segoe UI','Hiragino Sans',sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.5; transition: background .25s, color .25s; }
+    * { transition: background .25s, border-color .25s, color .25s; }
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 0; position: fixed; top: 0; left: 0; height: 100vh; }
+    .logo { padding: 0 20px 24px; font-size: 18px; font-weight: 700; color: var(--primary-l); display: flex; align-items: center; gap: 8px; }
+    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .role-chip { margin: 0 20px 16px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; background: rgba(108,99,255,.15); color: var(--primary-l); border: 1px solid rgba(108,99,255,.25); text-align: center; }
+    .sidebar-section { padding: 8px 12px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-sub); }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 14px; color: var(--text-sub); cursor: pointer; transition: all .15s; border-left: 3px solid transparent; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { color: var(--primary-l); background: rgba(108,99,255,.1); border-left-color: var(--primary); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#6c63ff,#00d4aa); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .user-role { font-size: 11px; color: var(--text-sub); }
+
+    /* ── Main ── */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .header-left h1 { font-size: 18px; font-weight: 700; }
+    .header-left p { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .theme-toggle { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface2); color: var(--text-sub); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-primary { background: var(--primary); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-s); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-primary:hover { background: var(--primary-l); }
+
+    /* ── Tab nav ── */
+    .tab-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; }
+    .tab-btn { padding: 14px 20px; font-size: 14px; font-weight: 500; color: var(--text-sub); border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 7px; transition: color .15s, border-color .15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--primary-l); border-bottom-color: var(--primary); }
+    .tab-icon { font-size: 15px; }
+
+    /* ── Body ── */
+    .body { padding: 24px 28px; flex: 1; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Common card ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .card-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+    /* ── Search / toolbar ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .search-wrap { flex: 1; position: relative; max-width: 320px; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-sub); pointer-events: none; }
+    .search-input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-s); padding: 7px 12px 7px 32px; font-size: 13px; color: var(--text); outline: none; }
+    .search-input:focus { border-color: var(--primary); }
+    .search-input::placeholder { color: var(--text-sub); }
+    .filter-select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-s); padding: 7px 28px 7px 10px; font-size: 12px; color: var(--text-sub); outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b90a7'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+
+    /* ════ TAB 1: メンバー管理 ════ */
+    .member-table { width: 100%; border-collapse: collapse; }
+    .member-table th { padding: 10px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-sub); background: var(--surface2); border-bottom: 1px solid var(--border); text-align: left; }
+    .member-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    .member-table tr:last-child td { border-bottom: none; }
+    .member-table tr:hover td { background: var(--surface2); }
+
+    .m-name-cell { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .m-name { font-weight: 600; font-size: 14px; }
+    .m-email { font-size: 11px; color: var(--text-sub); }
+
+    .role-select-inline { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-s); padding: 5px 24px 5px 8px; font-size: 12px; color: var(--text); outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b90a7'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; }
+
+    .proj-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .proj-chip { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; cursor: default; }
+    .chip-a { background: rgba(108,99,255,.15); color: var(--primary-l); }
+    .chip-b { background: rgba(0,212,170,.12);  color: var(--accent); }
+    .chip-c { background: rgba(255,179,71,.15); color: var(--warn); }
+
+    .status-dot-wrap { display: flex; align-items: center; gap: 6px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .action-btns { display: flex; gap: 4px; }
+    .icon-btn { width: 30px; height: 30px; border: 1px solid var(--border); background: var(--surface2); border-radius: var(--radius-s); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-sub); }
+    .icon-btn:hover { border-color: var(--primary); color: var(--primary-l); }
+    .icon-btn.del:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* Invite banner */
+    .invite-banner { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: rgba(108,99,255,.06); border-top: 1px solid var(--border); }
+    .invite-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-s); padding: 8px 12px; font-size: 13px; color: var(--text); outline: none; max-width: 280px; }
+    .invite-input:focus { border-color: var(--primary); }
+    .invite-input::placeholder { color: var(--text-sub); }
+    .btn-invite { background: var(--primary); color: #fff; border: none; padding: 8px 16px; border-radius: var(--radius-s); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .btn-invite:hover { background: var(--primary-l); }
+
+    /* ════ TAB 2: プロジェクト管理 ════ */
+    .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px,1fr)); gap: 18px; }
+    .proj-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .proj-card-header { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .proj-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .proj-name { font-size: 15px; font-weight: 700; flex: 1; }
+    .proj-meta { font-size: 12px; color: var(--text-sub); }
+    .proj-actions { display: flex; gap: 4px; }
+
+    .proj-member-list { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
+    .proj-member-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-s); background: var(--surface2); }
+    .pm-name { flex: 1; font-size: 13px; font-weight: 500; }
+    .pm-role { font-size: 11px; color: var(--text-sub); }
+    .pm-role-select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px 20px 3px 6px; font-size: 11px; color: var(--text-sub); outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238b90a7'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 5px center; }
+    .pm-remove { width: 24px; height: 24px; border: none; background: transparent; color: var(--text-sub); font-size: 14px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+    .pm-remove:hover { background: rgba(255,107,122,.15); color: var(--danger); }
+
+    .proj-add-row { padding: 10px 18px 14px; display: flex; gap: 8px; }
+    .proj-add-select { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-s); padding: 7px 10px; font-size: 13px; color: var(--text); outline: none; }
+    .btn-sm { background: var(--primary); color: #fff; border: none; padding: 7px 14px; border-radius: var(--radius-s); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .btn-sm:hover { background: var(--primary-l); }
+
+    .proj-new-card { background: var(--surface); border: 2px dashed var(--border); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 40px; cursor: pointer; transition: border-color .15s; }
+    .proj-new-card:hover { border-color: var(--primary); }
+    .proj-new-icon { font-size: 28px; }
+    .proj-new-label { font-size: 14px; color: var(--text-sub); }
+
+    /* ════ TAB 3: ロール・上長設定 ════ */
+    .role-table-wrap { overflow-x: auto; }
+    .role-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    .role-table th { padding: 10px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-sub); background: var(--surface2); border-bottom: 1px solid var(--border); text-align: left; }
+    .role-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    .role-table tr:last-child td { border-bottom: none; }
+    .role-table tr:hover td { background: var(--surface2); }
+
+    .manager-select { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-s); padding: 6px 28px 6px 10px; font-size: 13px; color: var(--text); outline: none; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b90a7'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; min-width: 160px; }
+
+    .role-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 10px; border-radius: 99px; font-weight: 600; }
+    .rb-admin  { background: rgba(108,99,255,.15); color: var(--primary-l); border: 1px solid rgba(108,99,255,.25); }
+    .rb-lead   { background: rgba(255,179,71,.15);  color: var(--warn);      border: 1px solid rgba(255,179,71,.25); }
+    .rb-member { background: var(--surface2); color: var(--text-sub); border: 1px solid var(--border); }
+
+    .permission-toggles { display: flex; gap: 6px; flex-wrap: wrap; }
+    .perm-chip { font-size: 11px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-sub); background: var(--surface2); cursor: pointer; user-select: none; transition: all .15s; }
+    .perm-chip.on { background: rgba(0,212,170,.12); color: var(--accent); border-color: rgba(0,212,170,.3); }
+
+    /* ── Flow diagram (ロール設定の補助) ── */
+    .flow-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+    .flow-title { font-size: 13px; font-weight: 700; color: var(--text-sub); margin-bottom: 16px; }
+    .flow-chart { display: flex; align-items: center; gap: 0; overflow-x: auto; padding-bottom: 4px; }
+    .flow-node { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
+    .flow-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+    .flow-name { font-size: 12px; font-weight: 600; }
+    .flow-role { font-size: 10px; color: var(--text-sub); }
+    .flow-arrow { font-size: 18px; color: var(--border); margin: 0 12px; padding-bottom: 20px; flex-shrink: 0; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; display: flex; align-items: center; gap: 10px; font-size: 13px; box-shadow: 0 4px 24px rgba(0,0,0,.3); transform: translateY(60px); opacity: 0; transition: all .25s; z-index: 999; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 500; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 440px; max-width: 90vw; }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 12px; color: var(--text-sub); font-weight: 500; margin-bottom: 6px; display: block; }
+    .form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-s); padding: 8px 12px; font-size: 13px; color: var(--text); outline: none; }
+    .form-input:focus { border-color: var(--primary); }
+    .color-row { display: flex; gap: 8px; }
+    .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all .15s; }
+    .color-dot.selected { border-color: var(--text); transform: scale(1.15); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+    .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text-sub); padding: 8px 16px; border-radius: var(--radius-s); font-size: 13px; cursor: pointer; }
+    .btn-cancel:hover { border-color: var(--primary); color: var(--primary-l); }
+    .btn-confirm { background: var(--primary); color: #fff; border: none; padding: 8px 20px; border-radius: var(--radius-s); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-confirm:hover { background: var(--primary-l); }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="logo"><div class="logo-icon">🔗</div>28teamworks</div>
+    <div class="role-chip">テナント管理者</div>
+    <div class="sidebar-section">メニュー</div>
+    <div class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">📋</span> ダッシュボード</div>
+    <div class="nav-item" onclick="location.href='mytasks.html'"><span class="nav-icon">✅</span> マイタスク</div>
+    <div class="nav-item" onclick="location.href='weekly-report.html'"><span class="nav-icon">📊</span> 週間レポート</div>
+    <div class="nav-item active"><span class="nav-icon">⚙️</span> 管理設定</div>
+    <div class="sidebar-section" style="margin-top:12px">プロジェクト</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#6c63ff">●</span> Platform v2</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#00d4aa">●</span> モバイルアプリ</div>
+    <div class="nav-item"><span class="nav-icon" style="color:#ffb347">●</span> 社内ツール改善</div>
+    <div class="sidebar-footer">
+      <div class="user-avatar">佐</div>
+      <div><div class="user-name">佐藤 美一</div><div class="user-role">管理者</div></div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+
+    <header class="header">
+      <div class="header-left">
+        <h1>管理設定</h1>
+        <p>テナント：MCTジャパン株式会社</p>
+      </div>
+      <div class="header-right">
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
+      </div>
+    </header>
+
+    <!-- Tab nav -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('members',this)"><span class="tab-icon">👤</span> メンバー管理</button>
+      <button class="tab-btn" onclick="switchTab('projects',this)"><span class="tab-icon">📁</span> プロジェクト管理</button>
+      <button class="tab-btn" onclick="switchTab('roles',this)"><span class="tab-icon">🔑</span> ロール・上長設定</button>
+    </div>
+
+    <div class="body">
+
+      <!-- ════ TAB 1: メンバー管理 ════ -->
+      <div class="tab-panel active" id="panel-members">
+
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" type="text" placeholder="名前・メールで検索">
+          </div>
+          <select class="filter-select">
+            <option>すべてのロール</option>
+            <option>管理者</option>
+            <option>上長</option>
+            <option>メンバー</option>
+          </select>
+          <select class="filter-select">
+            <option>すべてのプロジェクト</option>
+            <option>Platform v2</option>
+            <option>モバイルアプリ</option>
+            <option>社内ツール改善</option>
+          </select>
+          <div style="margin-left:auto">
+            <button class="btn-primary" onclick="openInviteModal()">＋ メンバーを招待</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">👤 メンバー一覧</div>
+              <div class="card-sub">5名 在籍中</div>
+            </div>
+          </div>
+          <table class="member-table">
+            <thead>
+              <tr>
+                <th>メンバー</th>
+                <th>ロール</th>
+                <th>参加プロジェクト</th>
+                <th>ステータス</th>
+                <th>最終ログイン</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="m-name-cell">
+                    <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                    <div><div class="m-name">佐藤 美一</div><div class="m-email">sato@example.com</div></div>
+                  </div>
+                </td>
+                <td><select class="role-select-inline"><option selected>管理者</option><option>上長</option><option>メンバー</option></select></td>
+                <td>
+                  <div class="proj-chips">
+                    <span class="proj-chip chip-a">Platform v2</span>
+                    <span class="proj-chip chip-b">モバイルアプリ</span>
+                  </div>
+                </td>
+                <td><div class="status-dot-wrap"><div class="status-dot" style="background:#00d4aa"></div>アクティブ</div></td>
+                <td style="color:var(--text-sub)">本日 09:12</td>
+                <td><div class="action-btns"><button class="icon-btn" title="編集">✏️</button><button class="icon-btn del" title="削除">🗑</button></div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="m-name-cell">
+                    <div class="avatar" style="background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+                    <div><div class="m-name">田中 けい子</div><div class="m-email">tanaka@example.com</div></div>
+                  </div>
+                </td>
+                <td><select class="role-select-inline"><option>管理者</option><option>上長</option><option selected>メンバー</option></select></td>
+                <td><div class="proj-chips"><span class="proj-chip chip-a">Platform v2</span></div></td>
+                <td><div class="status-dot-wrap"><div class="status-dot" style="background:#00d4aa"></div>アクティブ</div></td>
+                <td style="color:var(--text-sub)">本日 08:45</td>
+                <td><div class="action-btns"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑</button></div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="m-name-cell">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+                    <div><div class="m-name">山田 拓也</div><div class="m-email">yamada@example.com</div></div>
+                  </div>
+                </td>
+                <td><select class="role-select-inline"><option>管理者</option><option>上長</option><option selected>メンバー</option></select></td>
+                <td><div class="proj-chips"><span class="proj-chip chip-a">Platform v2</span><span class="proj-chip chip-c">社内ツール改善</span></div></td>
+                <td><div class="status-dot-wrap"><div class="status-dot" style="background:#00d4aa"></div>アクティブ</div></td>
+                <td style="color:var(--text-sub)">本日 10:03</td>
+                <td><div class="action-btns"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑</button></div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="m-name-cell">
+                    <div class="avatar" style="background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+                    <div><div class="m-name">鈴木 一郎</div><div class="m-email">suzuki@example.com</div></div>
+                  </div>
+                </td>
+                <td><select class="role-select-inline"><option>管理者</option><option>上長</option><option selected>メンバー</option></select></td>
+                <td><div class="proj-chips"><span class="proj-chip chip-a">Platform v2</span><span class="proj-chip chip-b">モバイルアプリ</span></div></td>
+                <td><div class="status-dot-wrap"><div class="status-dot" style="background:#ffb347"></div>離席中</div></td>
+                <td style="color:var(--text-sub)">本日 11:30</td>
+                <td><div class="action-btns"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑</button></div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="m-name-cell">
+                    <div class="avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">中</div>
+                    <div><div class="m-name">中村 さゆり</div><div class="m-email">nakamura@example.com</div></div>
+                  </div>
+                </td>
+                <td><select class="role-select-inline"><option>管理者</option><option>上長</option><option selected>メンバー</option></select></td>
+                <td><div class="proj-chips"><span class="proj-chip chip-a">Platform v2</span></div></td>
+                <td><div class="status-dot-wrap"><div class="status-dot" style="background:#8b90a7"></div>オフライン</div></td>
+                <td style="color:var(--text-sub)">昨日 18:22</td>
+                <td><div class="action-btns"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑</button></div></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="m-name-cell">
+                    <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#a855f7)">田</div>
+                    <div><div class="m-name">田村 修一</div><div class="m-email">tamura@example.com</div></div>
+                  </div>
+                </td>
+                <td><select class="role-select-inline"><option>管理者</option><option selected>上長</option><option>メンバー</option></select></td>
+                <td><div class="proj-chips"><span class="proj-chip chip-a">Platform v2</span><span class="proj-chip chip-b">モバイルアプリ</span><span class="proj-chip chip-c">社内ツール改善</span></div></td>
+                <td><div class="status-dot-wrap"><div class="status-dot" style="background:#00d4aa"></div>アクティブ</div></td>
+                <td style="color:var(--text-sub)">本日 09:00</td>
+                <td><div class="action-btns"><button class="icon-btn">✏️</button><button class="icon-btn del">🗑</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="invite-banner">
+            <span style="font-size:13px;color:var(--text-sub)">メールで招待：</span>
+            <input class="invite-input" type="email" placeholder="recruit@example.com">
+            <select class="filter-select" style="background:var(--bg)">
+              <option>メンバー</option><option>上長</option><option>管理者</option>
+            </select>
+            <button class="btn-invite" onclick="sendInvite()">招待メールを送る</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════ TAB 2: プロジェクト管理 ════ -->
+      <div class="tab-panel" id="panel-projects">
+
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" type="text" placeholder="プロジェクト名で検索">
+          </div>
+          <div style="margin-left:auto">
+            <button class="btn-primary" onclick="openNewProjectModal()">＋ プロジェクトを作成</button>
+          </div>
+        </div>
+
+        <div class="proj-grid">
+
+          <!-- Project A -->
+          <div class="proj-card">
+            <div class="proj-card-header">
+              <div class="proj-color" style="background:#6c63ff"></div>
+              <div style="flex:1">
+                <div class="proj-name">Platform v2</div>
+                <div class="proj-meta">5名 参加中</div>
+              </div>
+              <div class="proj-actions">
+                <button class="icon-btn" title="設定">✏️</button>
+                <button class="icon-btn del" title="削除">🗑</button>
+              </div>
+            </div>
+            <div class="proj-member-list">
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                <span class="pm-name">佐藤 美一</span>
+                <select class="pm-role-select" onchange="showToast('✅','ロールを変更しました')"><option selected>リード</option><option>メンバー</option></select>
+                <button class="pm-remove" title="プロジェクトから除外">✕</button>
+              </div>
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+                <span class="pm-name">田中 けい子</span>
+                <select class="pm-role-select" onchange="showToast('✅','ロールを変更しました')"><option>リード</option><option selected>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+                <span class="pm-name">山田 拓也</span>
+                <select class="pm-role-select" onchange="showToast('✅','ロールを変更しました')"><option>リード</option><option selected>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+                <span class="pm-name">鈴木 一郎</span>
+                <select class="pm-role-select"><option>リード</option><option selected>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#a855f7,#7c3aed)">中</div>
+                <span class="pm-name">中村 さゆり</span>
+                <select class="pm-role-select"><option>リード</option><option selected>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+            </div>
+            <div class="proj-add-row">
+              <select class="proj-add-select"><option value="">＋ メンバーを追加</option><option>田村 修一</option></select>
+              <button class="btn-sm" onclick="showToast('✅','メンバーを追加しました')">追加</button>
+            </div>
+          </div>
+
+          <!-- Project B -->
+          <div class="proj-card">
+            <div class="proj-card-header">
+              <div class="proj-color" style="background:#00d4aa"></div>
+              <div style="flex:1">
+                <div class="proj-name">モバイルアプリ</div>
+                <div class="proj-meta">3名 参加中</div>
+              </div>
+              <div class="proj-actions">
+                <button class="icon-btn">✏️</button>
+                <button class="icon-btn del">🗑</button>
+              </div>
+            </div>
+            <div class="proj-member-list">
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                <span class="pm-name">佐藤 美一</span>
+                <select class="pm-role-select"><option selected>リード</option><option>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+                <span class="pm-name">鈴木 一郎</span>
+                <select class="pm-role-select"><option>リード</option><option selected>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#6c63ff,#a855f7)">田</div>
+                <span class="pm-name">田村 修一</span>
+                <select class="pm-role-select"><option>リード</option><option selected>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+            </div>
+            <div class="proj-add-row">
+              <select class="proj-add-select"><option value="">＋ メンバーを追加</option><option>田中 けい子</option><option>山田 拓也</option><option>中村 さゆり</option></select>
+              <button class="btn-sm" onclick="showToast('✅','メンバーを追加しました')">追加</button>
+            </div>
+          </div>
+
+          <!-- Project C -->
+          <div class="proj-card">
+            <div class="proj-card-header">
+              <div class="proj-color" style="background:#ffb347"></div>
+              <div style="flex:1">
+                <div class="proj-name">社内ツール改善</div>
+                <div class="proj-meta">2名 参加中</div>
+              </div>
+              <div class="proj-actions">
+                <button class="icon-btn">✏️</button>
+                <button class="icon-btn del">🗑</button>
+              </div>
+            </div>
+            <div class="proj-member-list">
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+                <span class="pm-name">山田 拓也</span>
+                <select class="pm-role-select"><option selected>リード</option><option>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+              <div class="proj-member-row">
+                <div class="avatar" style="width:28px;height:28px;font-size:11px;background:linear-gradient(135deg,#6c63ff,#a855f7)">田</div>
+                <span class="pm-name">田村 修一</span>
+                <select class="pm-role-select"><option>リード</option><option selected>メンバー</option></select>
+                <button class="pm-remove">✕</button>
+              </div>
+            </div>
+            <div class="proj-add-row">
+              <select class="proj-add-select"><option value="">＋ メンバーを追加</option><option>佐藤 美一</option><option>田中 けい子</option><option>鈴木 一郎</option><option>中村 さゆり</option></select>
+              <button class="btn-sm" onclick="showToast('✅','メンバーを追加しました')">追加</button>
+            </div>
+          </div>
+
+          <!-- New project -->
+          <div class="proj-new-card" onclick="openNewProjectModal()">
+            <div class="proj-new-icon">➕</div>
+            <div class="proj-new-label">新規プロジェクトを作成</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ════ TAB 3: ロール・上長設定 ════ -->
+      <div class="tab-panel" id="panel-roles">
+
+        <!-- 報告ラインの流れ -->
+        <div class="flow-card">
+          <div class="flow-title">📮 週報の報告ライン</div>
+          <div class="flow-chart">
+            <div class="flow-node">
+              <div class="flow-avatar" style="background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+              <div class="flow-name">田中 けい子</div>
+              <div class="flow-role">メンバー</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <div class="flow-avatar" style="background:linear-gradient(135deg,#6c63ff,#a855f7)">田</div>
+              <div class="flow-name">田村 修一</div>
+              <div class="flow-role">上長・部長</div>
+            </div>
+
+            <div style="width:32px"></div>
+
+            <div class="flow-node">
+              <div class="flow-avatar" style="background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+              <div class="flow-name">山田 拓也</div>
+              <div class="flow-role">メンバー</div>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">
+              <div class="flow-avatar" style="background:linear-gradient(135deg,#6c63ff,#a855f7)">田</div>
+              <div class="flow-name">田村 修一</div>
+              <div class="flow-role">上長・部長</div>
+            </div>
+
+            <div style="width:32px"></div>
+
+            <div class="flow-node">
+              <div class="flow-avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+              <div class="flow-name">佐藤 美一</div>
+              <div class="flow-role">管理者</div>
+            </div>
+            <div class="flow-arrow" style="color:var(--surface2)">→</div>
+            <div class="flow-node" style="opacity:.35">
+              <div class="flow-avatar" style="background:var(--surface2);border:2px dashed var(--border)">?</div>
+              <div class="flow-name" style="color:var(--text-sub)">未設定</div>
+              <div class="flow-role">上長</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔑 ロール・上長の設定</div>
+              <div class="card-sub">各メンバーのシステムロールと週報送付先の上長を設定します</div>
+            </div>
+          </div>
+          <div class="role-table-wrap">
+            <table class="role-table">
+              <thead>
+                <tr>
+                  <th>メンバー</th>
+                  <th>システムロール</th>
+                  <th>週報の送付先（上長）</th>
+                  <th>権限</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="m-name-cell">
+                      <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#8b84ff)">佐</div>
+                      <div><div class="m-name">佐藤 美一</div><div class="m-email">sato@example.com</div></div>
+                    </div>
+                  </td>
+                  <td><span class="role-badge rb-admin">管理者</span></td>
+                  <td>
+                    <select class="manager-select" onchange="showToast('✅','上長を変更しました')">
+                      <option value="">未設定</option>
+                      <option>田村 修一</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="permission-toggles">
+                      <span class="perm-chip on" onclick="this.classList.toggle('on')">メンバー管理</span>
+                      <span class="perm-chip on" onclick="this.classList.toggle('on')">プロジェクト管理</span>
+                      <span class="perm-chip on" onclick="this.classList.toggle('on')">週報閲覧</span>
+                    </div>
+                  </td>
+                  <td><button class="icon-btn" onclick="showToast('✅','設定を保存しました')">💾</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="m-name-cell">
+                      <div class="avatar" style="background:linear-gradient(135deg,#6c63ff,#a855f7)">田</div>
+                      <div><div class="m-name">田村 修一</div><div class="m-email">tamura@example.com</div></div>
+                    </div>
+                  </td>
+                  <td><span class="role-badge rb-lead">上長</span></td>
+                  <td>
+                    <select class="manager-select" onchange="showToast('✅','上長を変更しました')">
+                      <option value="">未設定</option>
+                      <option selected>田村 修一（自身）</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="permission-toggles">
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">メンバー管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">プロジェクト管理</span>
+                      <span class="perm-chip on" onclick="this.classList.toggle('on')">週報閲覧</span>
+                    </div>
+                  </td>
+                  <td><button class="icon-btn" onclick="showToast('✅','設定を保存しました')">💾</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="m-name-cell">
+                      <div class="avatar" style="background:linear-gradient(135deg,#00d4aa,#00a880)">田</div>
+                      <div><div class="m-name">田中 けい子</div><div class="m-email">tanaka@example.com</div></div>
+                    </div>
+                  </td>
+                  <td><span class="role-badge rb-member">メンバー</span></td>
+                  <td>
+                    <select class="manager-select" onchange="showToast('✅','上長を変更しました')">
+                      <option value="">未設定</option>
+                      <option selected>田村 修一</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="permission-toggles">
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">メンバー管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">プロジェクト管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">週報閲覧</span>
+                    </div>
+                  </td>
+                  <td><button class="icon-btn" onclick="showToast('✅','設定を保存しました')">💾</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="m-name-cell">
+                      <div class="avatar" style="background:linear-gradient(135deg,#ff6b7a,#ff4757)">山</div>
+                      <div><div class="m-name">山田 拓也</div><div class="m-email">yamada@example.com</div></div>
+                    </div>
+                  </td>
+                  <td><span class="role-badge rb-member">メンバー</span></td>
+                  <td>
+                    <select class="manager-select" onchange="showToast('✅','上長を変更しました')">
+                      <option value="">未設定</option>
+                      <option selected>田村 修一</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="permission-toggles">
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">メンバー管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">プロジェクト管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">週報閲覧</span>
+                    </div>
+                  </td>
+                  <td><button class="icon-btn" onclick="showToast('✅','設定を保存しました')">💾</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="m-name-cell">
+                      <div class="avatar" style="background:linear-gradient(135deg,#ffb347,#ff8c00)">鈴</div>
+                      <div><div class="m-name">鈴木 一郎</div><div class="m-email">suzuki@example.com</div></div>
+                    </div>
+                  </td>
+                  <td><span class="role-badge rb-member">メンバー</span></td>
+                  <td>
+                    <select class="manager-select" onchange="showToast('✅','上長を変更しました')">
+                      <option value="">未設定</option>
+                      <option selected>田村 修一</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="permission-toggles">
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">メンバー管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">プロジェクト管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">週報閲覧</span>
+                    </div>
+                  </td>
+                  <td><button class="icon-btn" onclick="showToast('✅','設定を保存しました')">💾</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="m-name-cell">
+                      <div class="avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed)">中</div>
+                      <div><div class="m-name">中村 さゆり</div><div class="m-email">nakamura@example.com</div></div>
+                    </div>
+                  </td>
+                  <td><span class="role-badge rb-member">メンバー</span></td>
+                  <td>
+                    <select class="manager-select" onchange="showToast('✅','上長を変更しました')">
+                      <option value="">未設定</option>
+                      <option selected>田村 修一</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="permission-toggles">
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">メンバー管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">プロジェクト管理</span>
+                      <span class="perm-chip" onclick="this.classList.toggle('on')">週報閲覧</span>
+                    </div>
+                  </td>
+                  <td><button class="icon-btn" onclick="showToast('✅','設定を保存しました')">💾</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /body -->
+  </div><!-- /main -->
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal-overlay" id="modal-project">
+  <div class="modal">
+    <div class="modal-title">📁 新規プロジェクトを作成</div>
+    <div class="form-group">
+      <label class="form-label">プロジェクト名</label>
+      <input class="form-input" type="text" placeholder="例：新機能開発 Q3">
+    </div>
+    <div class="form-group">
+      <label class="form-label">カラー</label>
+      <div class="color-row">
+        <div class="color-dot selected" style="background:#6c63ff" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#00d4aa" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#ffb347" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#ff6b7a" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#a855f7" onclick="selectColor(this)"></div>
+        <div class="color-dot" style="background:#0ea5e9" onclick="selectColor(this)"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">説明（任意）</label>
+      <input class="form-input" type="text" placeholder="プロジェクトの目的・概要">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('modal-project')">キャンセル</button>
+      <button class="btn-confirm" onclick="createProject()">作成する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ─── Theme ─── */
+  const themeBtn = document.getElementById('theme-toggle');
+  let isDark = localStorage.getItem('theme') !== 'light';
+  function applyTheme() {
+    isDark ? document.documentElement.removeAttribute('data-theme') : document.documentElement.setAttribute('data-theme','light');
+    themeBtn.textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+  function toggleTheme() { isDark = !isDark; applyTheme(); }
+  applyTheme();
+
+  /* ─── Tabs ─── */
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  /* ─── Toast ─── */
+  function showToast(icon, msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-msg').textContent  = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  /* ─── Modal ─── */
+  function openNewProjectModal() { document.getElementById('modal-project').classList.add('show'); }
+  function openInviteModal() { showToast('📨','招待メール送信フォームを表示します'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  document.getElementById('modal-project').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('modal-project'); });
+
+  function selectColor(el) {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function createProject() {
+    closeModal('modal-project');
+    showToast('✅', 'プロジェクトを作成しました');
+  }
+
+  function sendInvite() {
+    const email = document.querySelector('.invite-input').value.trim();
+    if (!email) return;
+    showToast('📨', `${email} に招待メールを送りました`);
+    document.querySelector('.invite-input').value = '';
+  }
+</script>
+</body>
+</html>
