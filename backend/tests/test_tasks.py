@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.models import Project, Tenant, TenantUser, User
+from app.models.models import Project, ProjectMember, Tenant, TenantUser, User
 
 
 # ---------------------------------------------------------------------------
@@ -304,3 +304,34 @@ async def test_cannot_update_others_task(
         f"/api/tasks/{task_id}", json={"status": "done"}
     )
     assert patch_resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# BUG-024: ダッシュボードの閲覧権限（未所属 project は member/manager 不可・admin は可）
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_dashboard_non_member_forbidden(
+    alice_client: AsyncClient,
+    project: Project,
+    user_bob: tuple[User, TenantUser],
+    db: AsyncSession,
+) -> None:
+    """member は同一テナントでも未所属 project の dashboard を閲覧できない（403）。"""
+    bob, _ = user_bob
+    db.add(ProjectMember(project_id=project.id, user_id=bob.id))  # bob のみメンバー
+    await db.commit()
+
+    resp = await alice_client.get(f"/api/dashboard?project_id={project.id}")
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_dashboard_admin_can_view_any_project(
+    admin_client: AsyncClient,
+    project_with_members: Project,
+) -> None:
+    """admin は自分が未所属でもテナント内 project の dashboard を閲覧できる（200）。"""
+    resp = await admin_client.get(f"/api/dashboard?project_id={project_with_members.id}")
+    assert resp.status_code == 200

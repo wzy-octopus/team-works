@@ -17,9 +17,14 @@ export const useProjectStore = create<ProjectState>((set) => ({
   projects: [],
   activeProjectId: null,
   setProjects: (projects) =>
-    set((s) => ({
-      projects,
-      activeProjectId: s.activeProjectId ?? projects[0]?.id ?? null,
-    })),
+    set((s) => {
+      // 現在の選択が新しい（フィルタ済み）一覧に無い場合は先頭へリセットする。
+      // 非表示/未所属 project に選択が残って 403 になるのを防ぐ（BUG-024）。
+      const stillVisible = !!s.activeProjectId && projects.some((p) => p.id === s.activeProjectId)
+      return {
+        projects,
+        activeProjectId: stillVisible ? s.activeProjectId : (projects[0]?.id ?? null),
+      }
+    }),
   setActiveProject: (id) => set({ activeProjectId: id }),
 }))

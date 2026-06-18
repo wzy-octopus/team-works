@@ -52,6 +52,9 @@ export function DashboardPage() {
   } else if (errDetail === 'Project not found') {
     errTitle = 'プロジェクトが見つかりません'
     errBody = '選択中のプロジェクトが存在しません。別のプロジェクトを選択してください。'
+  } else if (errDetail === 'You are not a member of this project') {
+    errTitle = 'このプロジェクトを表示する権限がありません'
+    errBody = 'あなたはこのプロジェクトのメンバーではありません。管理者にプロジェクトへの追加を依頼してください。'
   }
 
   const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })

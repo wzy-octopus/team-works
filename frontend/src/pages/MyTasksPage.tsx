@@ -43,20 +43,27 @@ export function MyTasksPage() {
     },
   })
 
+  // タスク変更時はマイタスク一覧とチームダッシュボードを両方再取得する
+  // （BUG-025・同一ブラウザ内 cache 同期。多人数の実時同期は polling/WebSocket の別タスク）
+  const invalidateTaskViews = () => {
+    qc.invalidateQueries({ queryKey: ['tasks'] })
+    qc.invalidateQueries({ queryKey: ['dashboard'] })
+  }
+
   const addTask = useMutation({
     mutationFn: (data: object) => api.post('/tasks', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: invalidateTaskViews,
   })
 
   const updateTask = useMutation({
     mutationFn: ({ id, ...data }: { id: string; status?: TaskStatus; is_private?: boolean; name?: string }) =>
       api.patch(`/tasks/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: invalidateTaskViews,
   })
 
   const deleteTask = useMutation({
     mutationFn: (id: string) => api.delete(`/tasks/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onSuccess: invalidateTaskViews,
   })
 
   function handleAdd(e: React.FormEvent) {

@@ -38,6 +38,12 @@ export function useInitUser() {
   }, [user, setUser])
 
   useEffect(() => {
-    if (projects) setProjects(projects)
-  }, [projects, setProjects])
+    if (!projects || !user) return
+    // BUG-024: admin はテナント内の全 project を表示。manager/member は所属 project のみ。
+    const visible =
+      user.role === 'admin'
+        ? projects
+        : projects.filter((p: { id: string }) => user.project_ids?.includes(p.id))
+    setProjects(visible)
+  }, [projects, user, setProjects])
 }

@@ -46,12 +46,19 @@ async def list_projects(
     current_user: dict[str, Any] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[ProjectResponse]:
-    """テナントのプロジェクト一覧を返す（全認証ユーザーが参照可能）。"""
+    """プロジェクト一覧を返す。
+
+    admin はテナント内の全プロジェクト、manager/member は自分が ProjectMember として
+    所属するプロジェクトのみ取得する（BUG-024。フロント表示だけに頼らず API でも絞る）。
+    """
     tenant_id = current_user["tenant_id"]
 
-    projects_result = await db.execute(
-        select(Project).where(Project.tenant_id == tenant_id)
-    )
+    stmt = select(Project).where(Project.tenant_id == tenant_id)
+    if current_user["role"] != "admin":
+        stmt = stmt.join(ProjectMember, ProjectMember.project_id == Project.id).where(
+            ProjectMember.user_id == current_user["id"]
+        )
+    projects_result = await db.execute(stmt)
     projects = projects_result.scalars().all()
 
     responses: list[ProjectResponse] = []

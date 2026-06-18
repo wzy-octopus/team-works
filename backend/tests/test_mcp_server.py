@@ -559,9 +559,9 @@ async def test_integration_get_weekly_report(
 async def test_integration_list_projects(
     user_alice: tuple[User, TenantUser],
     tenant: Tenant,
-    project: Project,
+    project_with_members: Project,
 ):
-    """list_projects がプロジェクト一覧を返すことを統合テストで検証する。"""
+    """list_projects がプロジェクト一覧を返すことを統合テストで検証する（alice は所属メンバー）。"""
     alice, _ = user_alice
     token = make_token(alice, tenant)
     mcp_server._token = token
@@ -589,6 +589,6 @@ async def test_integration_list_projects(
             result = await mcp_server.list_projects()
             # fixture で作られた "Test Project" が含まれる
             assert "Test Project" in result
-            assert project.id in result
+            assert project_with_members.id in result
     finally:
         mcp_server.BASE_URL = original_base

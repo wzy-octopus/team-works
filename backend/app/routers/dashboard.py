@@ -41,10 +41,19 @@ async def get_dashboard(
         select(ProjectMember).where(ProjectMember.project_id == project_id)
     )
     members = members_result.scalars().all()
+    member_user_ids = [m.user_id for m in members]
+
+    # アクセス制御（BUG-024）: admin はテナント内の全 project を閲覧可。
+    # manager/member は自分が ProjectMember として所属する project のみ閲覧可。
+    # フロントの非表示だけに頼らず、後端で必ず兜底する。
+    if current_user["role"] != "admin" and current_user_id not in member_user_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not a member of this project",
+        )
+
     if not members:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project has no members")
-
-    member_user_ids = [m.user_id for m in members]
 
     # 自分のタスク（全件）
     result_mine = await db.execute(

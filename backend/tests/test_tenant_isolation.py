@@ -69,6 +69,46 @@ async def test_add_member_cross_tenant_user_rejected(
 
 
 @pytest.mark.asyncio
+async def test_list_projects_member_sees_only_member_projects(
+    alice_client: AsyncClient,
+    project_with_members: Project,
+    db: AsyncSession,
+) -> None:
+    """member は /admin/projects で自分が所属する project のみ取得する（BUG-024）。"""
+    other = Project(
+        tenant_id=project_with_members.tenant_id, name="No Alice Project", color="#000000"
+    )
+    db.add(other)
+    await db.commit()
+
+    resp = await alice_client.get("/api/admin/projects")
+    assert resp.status_code == 200
+    ids = [p["id"] for p in resp.json()]
+    assert project_with_members.id in ids
+    assert other.id not in ids
+
+
+@pytest.mark.asyncio
+async def test_list_projects_admin_sees_all(
+    admin_client: AsyncClient,
+    project_with_members: Project,
+    db: AsyncSession,
+) -> None:
+    """admin は /admin/projects でテナント内の全 project を取得する（未所属でも）。"""
+    other = Project(
+        tenant_id=project_with_members.tenant_id, name="Admin Sees This", color="#111111"
+    )
+    db.add(other)
+    await db.commit()
+
+    resp = await admin_client.get("/api/admin/projects")
+    assert resp.status_code == 200
+    ids = [p["id"] for p in resp.json()]
+    assert project_with_members.id in ids
+    assert other.id in ids
+
+
+@pytest.mark.asyncio
 async def test_remove_member_cross_tenant_project_rejected(
     admin_client: AsyncClient, db: AsyncSession
 ) -> None:
