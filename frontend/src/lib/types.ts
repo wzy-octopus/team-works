@@ -76,6 +76,16 @@ export interface DashboardTask extends Task {
   project_color: string
 }
 
+export interface PastIncompleteSummaryItem {
+  task_date: string
+  count: number
+}
+
+export interface PastIncompleteSummary {
+  total: number
+  items: PastIncompleteSummaryItem[]
+}
+
 export interface InboxReport {
   id: string
   user_id: string

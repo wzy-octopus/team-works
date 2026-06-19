@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -12,6 +13,68 @@ from app.models.models import Project, ProjectMember, Task
 
 router = APIRouter()
 
+PAST_INCOMPLETE_DAYS = 30
+INCOMPLETE_STATUSES = ("todo", "in_progress")
+
+
+def _past_incomplete_dates(today_str: str) -> list[str]:
+    today = date.fromisoformat(today_str)
+    return [
+        (today - timedelta(days=offset)).isoformat()
+        for offset in range(1, PAST_INCOMPLETE_DAYS + 1)
+    ]
+
+
+async def _build_past_incomplete_summary(
+    *,
+    db: AsyncSession,
+    project_id: str,
+    current_user_id: str,
+    member_user_ids: list[str],
+    today_str: str,
+) -> dict[str, Any]:
+    dates = _past_incomplete_dates(today_str)
+    counts_by_date = dict.fromkeys(dates, 0)
+    start_date = dates[-1]
+    end_date = dates[0]
+
+    own_result = await db.execute(
+        select(Task.task_date, func.count())
+        .where(
+            Task.user_id == current_user_id,
+            Task.project_id == project_id,
+            Task.task_date >= start_date,
+            Task.task_date <= end_date,
+            Task.status.in_(INCOMPLETE_STATUSES),
+        )
+        .group_by(Task.task_date)
+    )
+    for task_date, count in own_result.all():
+        counts_by_date[task_date] += count
+
+    other_user_ids = [uid for uid in member_user_ids if uid != current_user_id]
+    if other_user_ids:
+        other_result = await db.execute(
+            select(Task.task_date, func.count())
+            .where(
+                Task.user_id.in_(other_user_ids),
+                Task.project_id == project_id,
+                Task.task_date >= start_date,
+                Task.task_date <= end_date,
+                Task.status.in_(INCOMPLETE_STATUSES),
+                Task.is_private == False,  # noqa: E712
+            )
+            .group_by(Task.task_date)
+        )
+        for task_date, count in other_result.all():
+            counts_by_date[task_date] += count
+
+    items = [
+        {"task_date": task_date, "count": counts_by_date[task_date]}
+        for task_date in dates
+    ]
+    return {"total": sum(counts_by_date.values()), "items": items}
+
 
 @router.get("")
 async def get_dashboard(
@@ -24,7 +87,8 @@ async def get_dashboard(
 
     is_private=true のタスクは本人以外には返さないが、件数は private_counts に含める。
     """
-    target_date = task_date or business_today()
+    today_str = business_today()
+    target_date = task_date or today_str
     current_user_id = current_user["id"]
 
     project_result = await db.execute(
@@ -114,4 +178,16 @@ async def get_dashboard(
         for t in my_tasks + other_tasks
     ]
 
-    return {"tasks": tasks, "private_counts": private_counts}
+    past_incomplete_summary = await _build_past_incomplete_summary(
+        db=db,
+        project_id=project_id,
+        current_user_id=current_user_id,
+        member_user_ids=member_user_ids,
+        today_str=today_str,
+    )
+
+    return {
+        "tasks": tasks,
+        "private_counts": private_counts,
+        "past_incomplete_summary": past_incomplete_summary,
+    }

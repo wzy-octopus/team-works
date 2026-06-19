@@ -1,10 +1,13 @@
 """タスク関連のテスト。"""
 
+from datetime import date, timedelta
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.models import Project, ProjectMember, Tenant, TenantUser, User
+from app.core.dates import business_today
+from app.models.models import Project, ProjectMember, Task, Tenant, TenantUser, User
 
 
 # ---------------------------------------------------------------------------
@@ -335,3 +338,109 @@ async def test_dashboard_admin_can_view_any_project(
     """admin は自分が未所属でもテナント内 project の dashboard を閲覧できる（200）。"""
     resp = await admin_client.get(f"/api/dashboard?project_id={project_with_members.id}")
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_dashboard_returns_past_incomplete_summary(
+    alice_client: AsyncClient,
+    project_with_members: Project,
+    user_alice: tuple[User, TenantUser],
+    user_bob: tuple[User, TenantUser],
+    db: AsyncSession,
+) -> None:
+    """Dashboard returns the previous 30 days of incomplete task counts."""
+    alice, _ = user_alice
+    bob, _ = user_bob
+    today = date.fromisoformat(business_today())
+    yesterday = today - timedelta(days=1)
+    two_days_ago = today - timedelta(days=2)
+    three_days_ago = today - timedelta(days=3)
+    thirty_days_ago = today - timedelta(days=30)
+    thirty_one_days_ago = today - timedelta(days=31)
+
+    db.add_all(
+        [
+            Task(
+                user_id=alice.id,
+                project_id=project_with_members.id,
+                name="Alice private unfinished",
+                status="todo",
+                is_private=True,
+                task_date=yesterday.isoformat(),
+            ),
+            Task(
+                user_id=bob.id,
+                project_id=project_with_members.id,
+                name="Bob public unfinished",
+                status="todo",
+                is_private=False,
+                task_date=yesterday.isoformat(),
+            ),
+            Task(
+                user_id=bob.id,
+                project_id=project_with_members.id,
+                name="Bob done",
+                status="done",
+                is_private=False,
+                task_date=yesterday.isoformat(),
+            ),
+            Task(
+                user_id=bob.id,
+                project_id=project_with_members.id,
+                name="Bob private hidden unfinished",
+                status="todo",
+                is_private=True,
+                task_date=yesterday.isoformat(),
+            ),
+            Task(
+                user_id=alice.id,
+                project_id=project_with_members.id,
+                name="Alice in progress",
+                status="in_progress",
+                is_private=False,
+                task_date=two_days_ago.isoformat(),
+            ),
+            Task(
+                user_id=alice.id,
+                project_id=project_with_members.id,
+                name="Today unfinished excluded",
+                status="todo",
+                is_private=False,
+                task_date=today.isoformat(),
+            ),
+            Task(
+                user_id=alice.id,
+                project_id=project_with_members.id,
+                name="Old unfinished excluded",
+                status="todo",
+                is_private=False,
+                task_date=thirty_one_days_ago.isoformat(),
+            ),
+        ]
+    )
+    await db.commit()
+
+    resp = await alice_client.get(
+        f"/api/dashboard?project_id={project_with_members.id}"
+    )
+    assert resp.status_code == 200
+
+    summary = resp.json()["past_incomplete_summary"]
+    assert summary["total"] == 3
+    assert len(summary["items"]) == 30
+    assert summary["items"][0] == {
+        "task_date": yesterday.isoformat(),
+        "count": 2,
+    }
+    assert summary["items"][1] == {
+        "task_date": two_days_ago.isoformat(),
+        "count": 1,
+    }
+    assert summary["items"][2] == {
+        "task_date": three_days_ago.isoformat(),
+        "count": 0,
+    }
+    assert summary["items"][-1] == {
+        "task_date": thirty_days_ago.isoformat(),
+        "count": 0,
+    }
