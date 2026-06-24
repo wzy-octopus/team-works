@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -102,6 +102,41 @@ async def list_inbox(
         )
         for report, user in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# 未読フィードバック（バッジ用。/{report_id} より前に定義する）
+# ---------------------------------------------------------------------------
+
+
+@router.get("/unread-feedback-count")
+async def unread_feedback_count(
+    current_user: dict[str, Any] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """本人の週報のうち、未読フィードバックを持つ件数を返す（バッジ用）。"""
+    latest_fb = (
+        select(
+            WeeklyReportFeedback.report_id.label("report_id"),
+            func.max(WeeklyReportFeedback.created_at).label("last_fb"),
+        )
+        .group_by(WeeklyReportFeedback.report_id)
+        .subquery()
+    )
+    stmt = (
+        select(func.count())
+        .select_from(WeeklyReport)
+        .join(latest_fb, latest_fb.c.report_id == WeeklyReport.id)
+        .where(
+            WeeklyReport.user_id == current_user["id"],
+            or_(
+                WeeklyReport.feedback_seen_at.is_(None),
+                latest_fb.c.last_fb > WeeklyReport.feedback_seen_at,
+            ),
+        )
+    )
+    count = (await db.execute(stmt)).scalar_one()
+    return {"count": count}
 
 
 # ---------------------------------------------------------------------------
