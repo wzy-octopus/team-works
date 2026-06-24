@@ -28,8 +28,8 @@ BASE_URL = os.getenv("INTERNAL_API_URL", "http://127.0.0.1:8000")
 _mcp_token: contextvars.ContextVar[str] = contextvars.ContextVar("mcp_token", default="")
 
 mcp = FastMCP("28teamworks")
-# 既定の streamable_http_path は "/mcp"。/mcp に mount するので内側はルート "/" にする。
-mcp.settings.streamable_http_path = "/"
+# 既定の streamable_http_path は "/mcp"。ミドルウェアが元の scope path をそのまま
+# 内側アプリへ渡すため、既定のままにする（内側ルートは "/mcp"）。
 
 
 def _auth_headers() -> dict[str, str]:
@@ -213,40 +213,53 @@ async def list_projects() -> str:
 
 
 # ---------------------------------------------------------------------------
-# ASGI 認証ゲート（Bearer JWT を検証 → contextvar に格納 → 内側 MCP アプリへ委譲）
+# ASGI 認証ミドルウェア
+#   /mcp 配下を Starlette ルーティングより前段で横取りし、Bearer JWT を検証 →
+#   contextvar に格納 → 内側 MCP アプリへ委譲する。
+#   （Mount だと redirect_slashes=False のとき bare "/mcp" がマッチしないため、
+#    プレフィックス判定を自前で行う pure ASGI ミドルウェアにする。）
 # ---------------------------------------------------------------------------
 
 _inner_app = mcp.streamable_http_app()
 
 
-async def authed_mcp_app(scope, receive, send) -> None:
-    """/mcp に mount する ASGI アプリ。未認証は 401 を返す。"""
-    if scope["type"] != "http":
-        await _inner_app(scope, receive, send)
-        return
+def _is_mcp_path(path: str) -> bool:
+    return path == "/mcp" or path.startswith("/mcp/")
 
-    headers = dict(scope.get("headers") or [])
-    raw = headers.get(b"authorization", b"").decode()
-    token = raw[7:] if raw[:7].lower() == "bearer " else ""
 
-    ctx = None
-    if token:
-        async with AsyncSessionLocal() as db:
-            ctx = await resolve_user_context(token, db)
+class MCPMiddleware:
+    """/mcp 配下を認証して内側 MCP アプリへ委譲する pure ASGI ミドルウェア。"""
 
-    if not ctx:
-        await send(
-            {
-                "type": "http.response.start",
-                "status": 401,
-                "headers": [(b"content-type", b"application/json")],
-            }
-        )
-        await send({"type": "http.response.body", "body": b'{"detail":"Unauthorized"}'})
-        return
+    def __init__(self, app) -> None:
+        self.app = app
 
-    reset = _mcp_token.set(token)
-    try:
-        await _inner_app(scope, receive, send)
-    finally:
-        _mcp_token.reset(reset)
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] != "http" or not _is_mcp_path(scope.get("path", "")):
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers") or [])
+        raw = headers.get(b"authorization", b"").decode()
+        token = raw[7:] if raw[:7].lower() == "bearer " else ""
+
+        ctx = None
+        if token:
+            async with AsyncSessionLocal() as db:
+                ctx = await resolve_user_context(token, db)
+
+        if not ctx:
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 401,
+                    "headers": [(b"content-type", b"application/json")],
+                }
+            )
+            await send({"type": "http.response.body", "body": b'{"detail":"Unauthorized"}'})
+            return
+
+        reset = _mcp_token.set(token)
+        try:
+            await _inner_app(scope, receive, send)
+        finally:
+            _mcp_token.reset(reset)
