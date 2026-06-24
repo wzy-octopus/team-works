@@ -1,68 +1,68 @@
-# 28teamworks MCP サーバー設定手順
+# 28teamworks MCP 接続手順
 
-## これは何か
+TeamWorks を Claude Code / Claude Desktop から**自然言語で操作**するための MCP 設定手順です。
 
-`backend/mcp_server.py` は、28teamworks の API を**自然言語で操作する**ための MCP サーバーです。
-Claude Desktop / Claude Code に登録すると、「今日のタスクは？」「タスクを追加して」などの会話で
-タスク管理・週報照会ができます。
+提供ツール（6 個）: `list_tasks` / `add_task` / `update_task_status` / `delete_task` / `get_weekly_report` / `list_projects`
 
-提供ツール（6 個）:
-
-| ツール | 機能 |
-|---|---|
-| `list_tasks` | 指定日のマイタスク一覧 |
-| `add_task` | タスク追加 |
-| `update_task_status` | ステータス変更（todo / in_progress / done） |
-| `delete_task` | タスク削除 |
-| `get_weekly_report` | 週報取得 |
-| `list_projects` | プロジェクト一覧 |
-
-> 補足: MCP サーバー自体は API の**クライアント**です。LLM の API キーは不要で、
-> あなたのログイン情報で `/api/auth/login` してトークンを取り、各 API を呼びます。
+接続方法は2つあります。**通常は「方法A（HTTP接続）」を使ってください**（clone も Python 環境も不要）。
 
 ---
 
-## 前提条件
+## 方法A: HTTP 接続（推奨・全メンバー向け）
 
-1. **uv** がインストール済みで PATH に通っていること
-2. backend の依存が入っていること: `cd backend` → `uv sync`
-3. **呼び出し先の API が起動していること**（mcp_server.py は API を叩くだけなので、API が無いと全ツールがエラー）
-   - ローカル: `uv run uvicorn app.main:app --reload` → `http://localhost:8000`
-   - 本番を使う場合: `TEAMWORKS_API_URL=https://teamworks-app.azurewebsites.net`
+サーバー側に MCP が常駐しているため、各自の PC には**何もインストール不要**です。
+
+### 手順
+1. ブラウザで TeamWorks（https://teamworks-app.azurewebsites.net ）にログイン。
+2. 左サイドバー下部の **「🔌 MCP接続情報をコピー」** をクリック。
+   → 設定 JSON（あなた専用の長期トークン入り）がクリップボードにコピーされます。
+3. 貼り付け先:
+   - **Claude Code**: プロジェクト直下に `.mcp.json` を作成して貼り付け（または `claude mcp add-json 28teamworks '<コピー内容>'`）。
+   - **Claude Desktop**: `%APPDATA%\Claude\claude_desktop_config.json`（mac: `~/Library/Application Support/Claude/claude_desktop_config.json`）に貼り付け。
+4. Claude Code を開き直す / Claude Desktop を再起動。
+
+### コピーされる内容（例）
+```json
+{
+  "mcpServers": {
+    "28teamworks": {
+      "type": "http",
+      "url": "https://teamworks-app.azurewebsites.net/mcp",
+      "headers": { "Authorization": "Bearer <あなた専用の長期トークン>" }
+    }
+  }
+}
+```
+
+### 補足
+- トークンは **365 日有効**。期限切れになったら、再度ボタンでコピーし直してください。
+- トークンは**あなたのアカウント権限**で動作します（テナント隔離・非表示タスクのルールはサーバー側で維持）。
+- トークンは設定ファイルに**平文**で保存されます。ファイルの共有に注意してください。
+- この接続は**本番データを直接操作**します（タスク追加・削除・状態変更）。
 
 ---
 
-## 環境変数
+## 方法B: stdio 接続（ローカル開発者向け・上級）
 
-| 変数 | 必須 | 説明 | 既定値 |
-|---|---|---|---|
-| `TEAMWORKS_EMAIL` | ✅ | ログイン用メールアドレス | — |
-| `TEAMWORKS_PASSWORD` | ✅ | パスワード | — |
-| `TEAMWORKS_TENANT_ID` | 任意 | テナントID | 省略時は最初のテナント |
-| `TEAMWORKS_API_URL` | 任意 | API のベース URL | `http://localhost:8000` |
+リポジトリを clone してローカルで `mcp_server.py`（stdio 版）を起動する方法です。
+開発時に**ローカルの API** を叩きたい場合に使います。
 
----
+### 前提
+1. `git clone https://github.com/wzy-octopus/team-works.git`
+2. `uv` をインストール（PATH を通す）
+3. `cd team-works/backend` → `uv sync`
+4. 呼び出し先 API を起動: `uv run uvicorn app.main:app --reload`（`http://localhost:8000`）
 
-## A. Claude Desktop に登録する場合
-
-設定ファイル（Windows）: `%APPDATA%\Claude\claude_desktop_config.json`
-（Claude Desktop アプリ → 設定 → 開発者 → 「構成を編集」からも開けます）
-
+### 設定（Claude Desktop / Claude Code）
 ```json
 {
   "mcpServers": {
     "28teamworks": {
       "command": "uv",
-      "args": [
-        "--directory",
-        "C:\\Programming\\28teamworks\\backend",
-        "run",
-        "python",
-        "mcp_server.py"
-      ],
+      "args": ["--directory", "<clone した backend の絶対パス>", "run", "python", "mcp_server.py"],
       "env": {
-        "TEAMWORKS_EMAIL": "wang.ziyang@mct-japan.co.jp",
-        "TEAMWORKS_PASSWORD": "＜あなたのパスワード＞",
+        "TEAMWORKS_EMAIL": "<自分のメールアドレス>",
+        "TEAMWORKS_PASSWORD": "<自分のパスワード>",
         "TEAMWORKS_API_URL": "http://localhost:8000"
       }
     }
@@ -70,48 +70,16 @@ Claude Desktop / Claude Code に登録すると、「今日のタスクは？」
 }
 ```
 
-1. 上記を保存
-2. Claude Desktop を**再起動**
-3. 入力欄の 🔌（ツール）アイコンに `28teamworks` のツールが表示されれば成功
-
----
-
-## B. Claude Code に登録する場合
-
-### 方法1: プロジェクト直下に `.mcp.json` を置く（チーム共有向け）
-
-`C:\Programming\28teamworks\.mcp.json` を新規作成し、上の A と**同じ内容**を書く。
-Claude Code を開き直すと自動で読み込まれます。
-
-### 方法2: CLI で追加する
-
-```powershell
-claude mcp add 28teamworks `
-  -e TEAMWORKS_EMAIL=wang.ziyang@mct-japan.co.jp `
-  -e "TEAMWORKS_PASSWORD=＜あなたのパスワード＞" `
-  -e TEAMWORKS_API_URL=http://localhost:8000 `
-  -- uv --directory C:\Programming\28teamworks\backend run python mcp_server.py
-```
-
-確認: `claude mcp list`
+### 補足
+- `<clone した backend の絶対パス>` は各自の環境に合わせる（Windows はバックスラッシュを `\\` にエスケープ）。
+- `TEAMWORKS_API_URL` を本番 URL にすると本番データを操作する。
+- `mcp_server.py`（stdio）は各自の PC で動くため、clone と `uv sync` が必要。
 
 ---
 
 ## 動作確認
 
-API を起動した状態で、Claude に次のように頼む:
-
-- 「list_projects を実行して」 → プロジェクト一覧が返る
-- 「今日のタスクを見せて」 → `list_tasks` が動く
-- 「『要件定義』というタスクを 2 時間で追加して」 → `add_task` が動く
-
----
-
-## 注意点
-
-- **API が起動していないとツールはエラー**になります（mcp_server.py は API のクライアント）。
-- `TEAMWORKS_API_URL` を本番 URL にすると、**本番データを直接操作**します。テスト時はローカルを推奨。
-- パスワードが**平文**で設定ファイルに入るため、ファイルの取り扱いに注意してください。
-- `--directory` のパスは**自分の環境の backend パス**に合わせて変更してください
-  （この手順書では `C:\Programming\28teamworks\backend` を例にしています）。
-- `TEAMWORKS_TENANT_ID` は通常省略で OK（最初の所属テナントが使われます）。
+API 起動状態（方法A は常時稼働、方法B はローカル起動）で、Claude に次のように頼む:
+- 「list_projects を実行して」 → プロジェクト一覧
+- 「今日のタスクを見せて」 → `list_tasks`
+- 「『要件定義』というタスクを 2 時間で追加して」 → `add_task`

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -110,3 +110,19 @@ async def me(
         role=current_user["role"],
         project_ids=project_ids,
     )
+
+
+@router.post("/mcp-token")
+async def issue_mcp_token(
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, str]:
+    """MCP クライアント用の長期有効トークンを発行する（小チーム運用向け）。
+
+    既存の JWT と同じ署名・クレーム（sub / tenant_id）で、有効期限のみ長期(365日)。
+    Claude Code 等の MCP クライアントが Authorization: Bearer で送る。
+    """
+    token = create_access_token(
+        {"sub": current_user["id"], "tenant_id": current_user["tenant_id"]},
+        expires_delta=timedelta(days=365),
+    )
+    return {"access_token": token, "token_type": "bearer"}
