@@ -139,6 +139,24 @@ async def unread_feedback_count(
     return {"count": count}
 
 
+@router.post("/feedback/mark-read")
+async def mark_feedback_read(
+    current_user: dict[str, Any] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """本人の週報のフィードバックを全て既読化する（feedback_seen_at を now に更新）。"""
+    now = datetime.now(timezone.utc)
+    reports = (
+        await db.execute(
+            select(WeeklyReport).where(WeeklyReport.user_id == current_user["id"])
+        )
+    ).scalars().all()
+    for report in reports:
+        report.feedback_seen_at = now
+    await db.commit()
+    return {"count": 0}
+
+
 # ---------------------------------------------------------------------------
 # 週報の取得 or 作成（current エンドポイント）
 # ---------------------------------------------------------------------------
