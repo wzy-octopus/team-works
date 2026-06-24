@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectStore } from '../stores/projectStore'
 
@@ -16,10 +18,28 @@ export function Sidebar() {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
+  const [mcpCopied, setMcpCopied] = useState(false)
+
   function handleLogout() {
     logout()
     qc.clear()
     navigate('/login')
+  }
+
+  async function copyMcpConfig() {
+    const { data } = await api.post('/auth/mcp-token')
+    const config = {
+      mcpServers: {
+        '28teamworks': {
+          type: 'http',
+          url: `${window.location.origin}/mcp`,
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        },
+      },
+    }
+    await navigator.clipboard.writeText(JSON.stringify(config, null, 2))
+    setMcpCopied(true)
+    setTimeout(() => setMcpCopied(false), 2000)
   }
 
   return (
@@ -84,6 +104,12 @@ export function Sidebar() {
             <p className="text-gray-500 text-xs truncate">{user?.email}</p>
           </div>
         </div>
+        <button
+          onClick={copyMcpConfig}
+          className="w-full text-left text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-xs px-2 py-1 rounded transition-colors"
+        >
+          {mcpCopied ? '✓ コピーしました' : '🔌 MCP接続情報をコピー'}
+        </button>
         <button
           onClick={handleLogout}
           className="w-full text-left text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-xs px-2 py-1 rounded transition-colors"
