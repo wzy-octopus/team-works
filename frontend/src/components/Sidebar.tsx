@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectStore } from '../stores/projectStore'
 
@@ -15,6 +16,17 @@ export function Sidebar() {
   const { projects, activeProjectId, setActiveProject } = useProjectStore()
   const navigate = useNavigate()
   const qc = useQueryClient()
+
+  const { data: unread } = useQuery<{ count: number }>({
+    queryKey: ['weekly-report-unread'],
+    queryFn: async () => (await api.get('/weekly-reports/unread-feedback-count')).data,
+    refetchOnWindowFocus: true,
+  })
+  const markRead = useMutation({
+    mutationFn: () => api.post('/weekly-reports/feedback/mark-read'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['weekly-report-unread'] }),
+  })
+  const unreadCount = unread?.count ?? 0
 
   function handleLogout() {
     logout()
@@ -40,8 +52,19 @@ export function Sidebar() {
         <NavLink to="/my-tasks" className={navItemClass}>
           <span>✅</span> マイタスク
         </NavLink>
-        <NavLink to="/weekly-report" className={navItemClass}>
+        <NavLink
+          to="/weekly-report"
+          className={navItemClass}
+          onClick={() => {
+            if (unreadCount > 0) markRead.mutate()
+          }}
+        >
           <span>📝</span> 週間レポート
+          {unreadCount > 0 && (
+            <span className="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-600 text-white text-xs font-semibold">
+              {unreadCount}
+            </span>
+          )}
         </NavLink>
         <NavLink to="/inbox" className={navItemClass}>
           <span>📬</span> 週報受信トレイ
