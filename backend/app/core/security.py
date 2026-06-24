@@ -97,6 +97,45 @@ async def get_current_user(
     }
 
 
+async def resolve_user_context(
+    token: str, db: AsyncSession, x_tenant_id: str | None = None
+) -> dict[str, Any] | None:
+    """JWT を検証しユーザーコンテキストを返す。無効なら None。
+
+    get_current_user と同じ判定（署名・ユーザー存在・テナント所属）を、例外ではなく
+    None で返す版。FastAPI の Depends を使えない箇所（MCP の ASGI 認証ゲート等）で使う。
+    """
+    from app.models.models import TenantUser, User
+
+    payload = decode_token(token)
+    if not payload:
+        return None
+    user_id = payload.get("sub")
+    tenant_id = x_tenant_id or payload.get("tenant_id")
+    if not user_id or not tenant_id:
+        return None
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        return None
+    tu = (
+        await db.execute(
+            select(TenantUser).where(
+                TenantUser.user_id == user_id, TenantUser.tenant_id == tenant_id
+            )
+        )
+    ).scalar_one_or_none()
+    if not tu:
+        return None
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "role": tu.role,
+        "tenant_id": tenant_id,
+        "manager_user_id": tu.manager_user_id,
+    }
+
+
 async def require_admin(current_user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     if current_user["role"] != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin role required")
