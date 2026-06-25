@@ -29,7 +29,7 @@ BASE_URL = os.getenv("INTERNAL_API_URL", "http://127.0.0.1:8000")
 _mcp_token: contextvars.ContextVar[str] = contextvars.ContextVar("mcp_token", default="")
 
 mcp = FastMCP(
-    "28teamworks",
+    "TeamWorks",
     # MCP SDK の DNS リバインディング保護は Host を localhost に限定するため、Azure の
     # 公開ドメインだと 421 "Invalid Host header" になる。認証は MCPMiddleware の Bearer JWT
     # で行っており（Cookie 非依存＝ブラウザ経由 DNS リバインディングの脅威が無い）、この

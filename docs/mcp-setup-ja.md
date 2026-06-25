@@ -17,7 +17,7 @@ TeamWorks を Claude Code / Claude Desktop から**自然言語で操作**する
 2. 左サイドバー下部の **「🔌 MCP接続情報をコピー」** をクリック。
    → 設定 JSON（あなた専用の長期トークン入り）がクリップボードにコピーされます。
 3. 貼り付け先:
-   - **Claude Code**: プロジェクト直下に `.mcp.json` を作成して貼り付け（または `claude mcp add-json 28teamworks '<コピー内容>'`）。
+   - **Claude Code**: プロジェクト直下に `.mcp.json` を作成して貼り付け（または `claude mcp add-json TeamWorks '<コピー内容>'`）。
    - **Claude Desktop**: `%APPDATA%\Claude\claude_desktop_config.json`（mac: `~/Library/Application Support/Claude/claude_desktop_config.json`）に貼り付け。
 4. Claude Code を開き直す / Claude Desktop を再起動。
 
@@ -25,7 +25,7 @@ TeamWorks を Claude Code / Claude Desktop から**自然言語で操作**する
 ```json
 {
   "mcpServers": {
-    "28teamworks": {
+    "TeamWorks": {
       "type": "http",
       "url": "https://teamworks-app.azurewebsites.net/mcp",
       "headers": { "Authorization": "Bearer <あなた専用の長期トークン>" }
@@ -57,7 +57,7 @@ TeamWorks を Claude Code / Claude Desktop から**自然言語で操作**する
 ```json
 {
   "mcpServers": {
-    "28teamworks": {
+    "TeamWorks": {
       "command": "uv",
       "args": ["--directory", "<clone した backend の絶対パス>", "run", "python", "mcp_server.py"],
       "env": {

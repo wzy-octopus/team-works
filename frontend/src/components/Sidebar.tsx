@@ -41,7 +41,7 @@ export function Sidebar() {
     const { data } = await api.post('/auth/mcp-token')
     const config = {
       mcpServers: {
-        '28teamworks': {
+        'TeamWorks': {
           type: 'http',
           url: `${window.location.origin}/mcp`,
           headers: { Authorization: `Bearer ${data.access_token}` },
