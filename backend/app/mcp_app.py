@@ -18,6 +18,7 @@ from datetime import date, timedelta
 
 import httpx
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from app.core.database import AsyncSessionLocal
 from app.core.security import resolve_user_context
@@ -27,7 +28,14 @@ BASE_URL = os.getenv("INTERNAL_API_URL", "http://127.0.0.1:8000")
 # 認証ゲートが格納した呼び出し元 JWT を、同一リクエストの async コンテキスト内でツールが読む。
 _mcp_token: contextvars.ContextVar[str] = contextvars.ContextVar("mcp_token", default="")
 
-mcp = FastMCP("28teamworks")
+mcp = FastMCP(
+    "28teamworks",
+    # MCP SDK の DNS リバインディング保護は Host を localhost に限定するため、Azure の
+    # 公開ドメインだと 421 "Invalid Host header" になる。認証は MCPMiddleware の Bearer JWT
+    # で行っており（Cookie 非依存＝ブラウザ経由 DNS リバインディングの脅威が無い）、この
+    # 保護は不要なので無効化する。
+    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
+)
 # 既定の streamable_http_path は "/mcp"。ミドルウェアが元の scope path をそのまま
 # 内側アプリへ渡すため、既定のままにする（内側ルートは "/mcp"）。
 
