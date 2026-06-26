@@ -108,6 +108,41 @@ def _current_week_start() -> str:
     return (today - timedelta(days=today.weekday())).isoformat()
 
 
+def _format_team_dashboard(data: dict, project_id: str, target_date: str) -> str:
+    """ダッシュボード API のレスポンスをチーム一覧テキストに整形する。
+
+    自分のタスクは全件（非公開含む）。他メンバーは公開タスクのみで、非公開は
+    private_counts の件数だけを表示する（Web のチームダッシュボードと同じ可視性）。
+    """
+    tasks = data.get("tasks", []) if isinstance(data, dict) else []
+    private_counts = data.get("private_counts", {}) if isinstance(data, dict) else {}
+    status_label = {"todo": "未着手", "in_progress": "進行中", "done": "完了"}
+    project_name = tasks[0]["project_name"] if tasks else project_id
+
+    by_user: dict[str, dict] = {}
+    for t in tasks:
+        u = by_user.setdefault(t["user_id"], {"name": t["user_name"], "tasks": []})
+        u["tasks"].append(t)
+
+    lines = [f"【チームダッシュボード】{project_name} / {target_date}（タスク {len(tasks)}件）"]
+    if not by_user:
+        lines.append("（表示できるタスクはありません）")
+        return "\n".join(lines)
+
+    for uid, info in by_user.items():
+        done = sum(1 for t in info["tasks"] if t["status"] == "done")
+        lines.append(f"\n■ {info['name']}（{done}/{len(info['tasks'])} 完了）")
+        for t in info["tasks"]:
+            hours = f"{t['estimated_hours']}h" if t.get("estimated_hours") else "-"
+            lock = " 🔒" if t.get("is_private") else ""
+            label = status_label.get(t["status"], t["status"])
+            lines.append(f"  - [{label}] {t['name']}（{hours}）{lock}")
+        cnt = private_counts.get(uid, 0)
+        if cnt:
+            lines.append(f"  🔒 非表示 {cnt}件")
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # ツール定義
 # ---------------------------------------------------------------------------
@@ -263,6 +298,26 @@ async def list_projects() -> str:
     for p in projects:
         lines.append(f"- {p['name']}  ID: {p['id']}")
     return "\n".join(lines)
+
+
+@mcp.tool()
+async def get_team_dashboard(project_id: str, task_date: str | None = None) -> str:
+    """指定プロジェクトのチームダッシュボード（全メンバーのタスク一覧）を取得する。
+
+    自分のタスクは全件、他メンバーは公開タスクのみ（非公開は件数のみ）表示する。
+    閲覧権限のあるプロジェクトに限る（所属していない/権限が無ければエラー）。
+    project_id は list_projects で確認できる。
+
+    Args:
+        project_id: プロジェクトID（必須）
+        task_date: 日付（YYYY-MM-DD。省略時は当日）
+    """
+    target_date = task_date or _today()
+    params = {"project_id": project_id, "task_date": target_date}
+    data = await _request("GET", "/api/dashboard", params=params)
+    if not isinstance(data, dict):
+        return "ダッシュボードの取得に失敗しました。"
+    return _format_team_dashboard(data, project_id, target_date)
 
 
 if __name__ == "__main__":
