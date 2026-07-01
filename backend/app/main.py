@@ -69,4 +69,11 @@ if STATIC_DIR.is_dir():
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str) -> FileResponse:
+        # public/ 由来のルート直下の実ファイル（favicon.svg / icons.svg 等）はそのまま返す。
+        # 実ファイルの無いパスは SPA の index.html にフォールバック（クライアントルーティング）。
+        # candidate は resolve 後に static ルート配下であることを確認し、パストラバーサルを防ぐ。
+        if full_path:
+            candidate = (STATIC_DIR / full_path).resolve()
+            if candidate.is_relative_to(STATIC_DIR.resolve()) and candidate.is_file():
+                return FileResponse(candidate)
         return FileResponse(STATIC_DIR / "index.html")
