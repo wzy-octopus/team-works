@@ -86,6 +86,40 @@ export interface PastIncompleteSummary {
   items: PastIncompleteSummaryItem[]
 }
 
+// 週表示（/dashboard/week）: メンバー×日 の集計。
+export interface DashboardWeekDay {
+  date: string
+  todo: number
+  in_progress: number
+  done: number
+  private_count: number
+}
+
+export interface DashboardWeekMember {
+  user_id: string
+  user_name: string
+  days: DashboardWeekDay[]
+}
+
+// 人名展開用のタスク明細（自分=全件・他人=公開のみ。他人の private は含まれない）。
+export interface DashboardWeekTask {
+  id: string
+  user_id: string
+  user_name: string
+  name: string
+  status: TaskStatus
+  is_private: boolean
+  task_date: string
+  estimated_hours: number | null
+}
+
+export interface DashboardWeek {
+  week_start: string
+  days: string[]
+  members: DashboardWeekMember[]
+  tasks: DashboardWeekTask[]
+}
+
 export interface InboxReport {
   id: string
   user_id: string

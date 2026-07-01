@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,17 +17,26 @@ router = APIRouter()
 @router.get("", response_model=TaskListResponse)
 async def list_tasks(
     task_date: str | None = Query(None, description="YYYY-MM-DD。省略時は当日"),
+    week_start: str | None = Query(
+        None,
+        description="YYYY-MM-DD（月曜日）。指定時はその週（月〜日の7日間）のタスクを返す。task_date より優先。",
+    ),
     project_id: str | None = Query(None),
     current_user: dict[str, Any] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> TaskListResponse:
-    """当日のマイタスク一覧を返す。"""
-    target_date = task_date or business_today()
+    """マイタスク一覧を返す。
 
-    stmt = select(Task).where(
-        Task.user_id == current_user["id"],
-        Task.task_date == target_date,
-    )
+    week_start を指定するとその週（月〜日の7日間）を、指定しなければ単日（task_date、
+    省略時は当日）を返す。応答形式は共通（フラットな tasks 配列）。
+    """
+    stmt = select(Task).where(Task.user_id == current_user["id"])
+    if week_start:
+        week_end = (date.fromisoformat(week_start) + timedelta(days=6)).isoformat()
+        stmt = stmt.where(Task.task_date >= week_start, Task.task_date <= week_end)
+    else:
+        target_date = task_date or business_today()
+        stmt = stmt.where(Task.task_date == target_date)
     if project_id:
         stmt = stmt.where(Task.project_id == project_id)
 
