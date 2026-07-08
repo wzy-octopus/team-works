@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/authStore'
@@ -16,7 +16,10 @@ export function Sidebar() {
   const { user, logout } = useAuthStore()
   const { projects, activeProjectId, setActiveProject } = useProjectStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const qc = useQueryClient()
+  const inboxWeek = new URLSearchParams(location.search).get('week')
+  const inboxPath = inboxWeek ? `/inbox?week=${inboxWeek}` : '/inbox'
 
   const { data: unread } = useQuery<{ count: number }>({
     queryKey: ['weekly-report-unread'],
@@ -85,7 +88,7 @@ export function Sidebar() {
             </span>
           )}
         </NavLink>
-        <NavLink to="/inbox" className={navItemClass}>
+        <NavLink to={inboxPath} className={navItemClass}>
           <span>📬</span> 週報受信トレイ
         </NavLink>
         <NavLink to="/admin" className={navItemClass}>

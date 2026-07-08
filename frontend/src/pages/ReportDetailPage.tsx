@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -21,6 +21,7 @@ interface ReportWithUser extends WeeklyReport {
 
 export function ReportDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const qc = useQueryClient()
   const [comment, setComment] = useState('')
   const [selectedReactions, setSelectedReactions] = useState<ReactionType[]>([])
@@ -65,13 +66,19 @@ export function ReportDetailPage() {
 
   const hasFeedback = !!feedback || submitted
   const canSend = !hasFeedback && (selectedReactions.length > 0 || comment.trim())
+  const sourceWeek = searchParams.get('week')
+  const inboxBackPath = sourceWeek
+    ? `/inbox?week=${sourceWeek}`
+    : report
+    ? `/inbox?week=${report.week_start_date}`
+    : '/inbox'
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Link
-            to={report ? `/inbox?week=${report.week_start_date}` : '/inbox'}
+            to={inboxBackPath}
             className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm"
           >
             ← 受信トレイ

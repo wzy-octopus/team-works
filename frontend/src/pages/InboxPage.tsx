@@ -120,7 +120,7 @@ export function InboxPage() {
             return (
               <Link
                 key={r.id}
-                to={`/inbox/${r.id}`}
+                to={`/inbox/${r.id}?week=${weekStart}`}
                 className={`flex items-center gap-4 bg-[var(--bg-surface)] rounded-xl px-4 py-3 border transition-colors hover:border-indigo-500/50 ${
                   isPending
                     ? 'border-[var(--border-subtle)] opacity-60'
