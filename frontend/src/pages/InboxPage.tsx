@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { ThemeToggle } from '../components/ThemeToggle'
-import { addDays, jstThisMonday } from '../lib/date'
+import { addDays, jstThisMonday, mondayOf } from '../lib/date'
 import type { InboxReport, WeeklyReportStatus } from '../lib/types'
 
 const STATUS_LABELS: Record<WeeklyReportStatus, string> = {
@@ -19,8 +19,18 @@ const STATUS_COLORS: Record<WeeklyReportStatus, string> = {
   feedback_received: 'text-green-300 bg-green-900',
 }
 
+// ?week= が有効な日付ならその週の月曜日、無効/未指定なら今週の月曜日（JST）。
+// 週表示中の詳細画面から戻った時に元の週を維持するため、選択週は URL で持つ。
+function resolveWeekStart(param: string | null): string {
+  if (param && /^\d{4}-\d{2}-\d{2}$/.test(param) && !isNaN(new Date(`${param}T12:00:00Z`).getTime())) {
+    return mondayOf(param)
+  }
+  return jstThisMonday()
+}
+
 export function InboxPage() {
-  const [weekStart, setWeekStart] = useState(jstThisMonday())
+  const [searchParams, setSearchParams] = useSearchParams()
+  const weekStart = resolveWeekStart(searchParams.get('week'))
   const [filter, setFilter] = useState<'all' | 'submitted' | 'feedback_received' | 'pending'>('all')
 
   const { data: reports = [], isLoading } = useQuery<InboxReport[]>({
@@ -32,7 +42,7 @@ export function InboxPage() {
   })
 
   function shiftWeek(delta: number) {
-    setWeekStart(addDays(weekStart, delta * 7))
+    setSearchParams({ week: addDays(weekStart, delta * 7) }, { replace: true })
   }
 
   const weekEnd = addDays(weekStart, 6)

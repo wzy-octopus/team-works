@@ -70,7 +70,12 @@ export function ReportDetailPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Link to="/inbox" className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm">← 受信トレイ</Link>
+          <Link
+            to={report ? `/inbox?week=${report.week_start_date}` : '/inbox'}
+            className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm"
+          >
+            ← 受信トレイ
+          </Link>
           {report && (
             <>
               <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold">
