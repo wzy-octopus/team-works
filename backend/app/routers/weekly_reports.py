@@ -113,8 +113,8 @@ async def list_inbox(
 async def unread_feedback_count(
     current_user: dict[str, Any] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict[str, int]:
-    """本人の週報のうち、未読フィードバックを持つ件数を返す（バッジ用）。"""
+) -> dict[str, int | str | None]:
+    """未読フィードバック件数と最新の対象週を返す。"""
     latest_fb = (
         select(
             WeeklyReportFeedback.report_id.label("report_id"),
@@ -136,7 +136,47 @@ async def unread_feedback_count(
         )
     )
     count = (await db.execute(stmt)).scalar_one()
-    return {"count": count}
+    latest_week_stmt = (
+        select(WeeklyReport.week_start_date)
+        .join(latest_fb, latest_fb.c.report_id == WeeklyReport.id)
+        .where(
+            WeeklyReport.user_id == current_user["id"],
+            or_(
+                WeeklyReport.feedback_seen_at.is_(None),
+                latest_fb.c.last_fb > WeeklyReport.feedback_seen_at,
+            ),
+        )
+        .order_by(WeeklyReport.week_start_date.desc())
+        .limit(1)
+    )
+    latest_week = (await db.execute(latest_week_stmt)).scalar_one_or_none()
+    return {"count": count, "latest_unread_week_start_date": latest_week}
+
+
+@router.post("/{report_id}/feedback/mark-read")
+async def mark_report_feedback_read(
+    report_id: str,
+    current_user: dict[str, Any] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, bool]:
+    """表示した本人の週報フィードバックだけを既読化する。"""
+    report = (
+        await db.execute(
+            select(WeeklyReport).where(
+                WeeklyReport.id == report_id,
+                WeeklyReport.user_id == current_user["id"],
+            )
+        )
+    ).scalar_one_or_none()
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found",
+        )
+
+    report.feedback_seen_at = datetime.now(timezone.utc)
+    await db.commit()
+    return {"read": True}
 
 
 @router.post("/feedback/mark-read")

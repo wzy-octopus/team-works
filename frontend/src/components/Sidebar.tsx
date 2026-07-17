@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuthStore } from '../stores/authStore'
 import { useProjectStore } from '../stores/projectStore'
@@ -21,16 +21,18 @@ export function Sidebar() {
   const inboxWeek = new URLSearchParams(location.search).get('week')
   const inboxPath = inboxWeek ? `/inbox?week=${inboxWeek}` : '/inbox'
 
-  const { data: unread } = useQuery<{ count: number }>({
+  const { data: unread } = useQuery<{
+    count: number
+    latest_unread_week_start_date: string | null
+  }>({
     queryKey: ['weekly-report-unread'],
     queryFn: async () => (await api.get('/weekly-reports/unread-feedback-count')).data,
     refetchOnWindowFocus: true,
   })
-  const markRead = useMutation({
-    mutationFn: () => api.post('/weekly-reports/feedback/mark-read'),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['weekly-report-unread'] }),
-  })
   const unreadCount = unread?.count ?? 0
+  const weeklyReportPath = unread?.latest_unread_week_start_date
+    ? `/weekly-report?week=${unread.latest_unread_week_start_date}`
+    : '/weekly-report'
 
   const [mcpCopied, setMcpCopied] = useState(false)
 
@@ -75,11 +77,8 @@ export function Sidebar() {
           <span>✅</span> マイタスク
         </NavLink>
         <NavLink
-          to="/weekly-report"
+          to={weeklyReportPath}
           className={navItemClass}
-          onClick={() => {
-            if (unreadCount > 0) markRead.mutate()
-          }}
         >
           <span>📝</span> 週間レポート
           {unreadCount > 0 && (

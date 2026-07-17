@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/authStore'
 import { jstToday, jstThisMonday, addDays, mondayOf } from '../lib/date'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { TaskEditModal } from '../components/TaskEditModal'
+import { DateNavigator } from '../components/DateNavigator'
 import type { Task, TaskStatus } from '../lib/types'
 
 const STATUS_LABELS: Record<TaskStatus, string> = { todo: '未着手', in_progress: '進行中', done: '完了' }
@@ -187,12 +188,10 @@ export function MyTasksPage() {
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">マイタスク</h1>
         <div className="flex items-center gap-3 flex-wrap">
           {/* 日付ジャンプ（任意の日付へ移動してその日を選択） */}
-          <input
-            type="date"
+          <DateNavigator
             value={weekSelectedDay}
             max={today}
-            onChange={(e) => jumpToDate(e.target.value || today)}
-            className="px-3 py-1.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-indigo-500"
+            onChange={jumpToDate}
           />
           {weekSelectedDay !== today && (
             <button

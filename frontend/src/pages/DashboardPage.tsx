@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useProjectStore } from '../stores/projectStore'
 import { jstToday, jstThisMonday, addDays } from '../lib/date'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { DateNavigator } from '../components/DateNavigator'
 import type { DashboardTask, PastIncompleteSummary, DashboardWeek } from '../lib/types'
 
 type ViewMode = 'member' | 'kanban'
@@ -186,14 +187,13 @@ export function DashboardPage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* 日入力（並列常駐・クリックで日モード） */}
-          <div className={`flex items-center gap-2 rounded-lg px-1 ${dayControlActive ? 'ring-1 ring-indigo-500' : ''}`}>
-            <input
-              type="date"
+          <div className="flex items-center gap-2">
+            <DateNavigator
               value={selectedDate}
               max={businessToday}
-              onFocus={() => setGranularity('day')}
-              onChange={(e) => goDay(e.target.value || businessToday)}
-              className="px-3 py-1.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-indigo-500"
+              active={dayControlActive}
+              onActivate={() => setGranularity('day')}
+              onChange={goDay}
             />
             {dayControlActive && selectedDate !== businessToday && (
               <button

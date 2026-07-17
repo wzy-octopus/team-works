@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useThemeStore } from '../stores/themeStore'
-import { addDays, jstThisMonday } from '../lib/date'
+import { addDays, jstThisMonday, mondayOf } from '../lib/date'
 import type { WeeklyReport, WeeklyReportFeedback, ReactionType } from '../lib/types'
 
 const REACTIONS: { type: ReactionType; emoji: string; label: string }[] = [
@@ -28,11 +29,19 @@ const STATUS_COLORS: Record<string, string> = {
   feedback_received: 'bg-green-700 text-green-200',
 }
 
+function resolveWeekStart(param: string | null): string {
+  if (param && /^\d{4}-\d{2}-\d{2}$/.test(param) && !isNaN(new Date(`${param}T12:00:00Z`).getTime())) {
+    return mondayOf(param)
+  }
+  return jstThisMonday()
+}
+
 export function WeeklyReportPage() {
   const qc = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const dark = useThemeStore((s) => s.dark)
   const textColor = dark ? '#ffffff' : '#111827'
-  const [weekStart, setWeekStart] = useState(jstThisMonday())
+  const weekStart = resolveWeekStart(searchParams.get('week'))
   const [showSubmitModal, setShowSubmitModal] = useState(false)
   const [fieldValues, setFieldValues] = useState({ feeling: '', questions: '', issues: '' })
 
@@ -86,8 +95,20 @@ export function WeeklyReportPage() {
     enabled: !!report?.id,
   })
 
+  const { mutate: markFeedbackRead } = useMutation({
+    mutationFn: (reportId: string) =>
+      api.post(`/weekly-reports/${reportId}/feedback/mark-read`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['weekly-report-unread'] }),
+  })
+
+  useEffect(() => {
+    if (report?.id && feedback?.id) {
+      markFeedbackRead(report.id)
+    }
+  }, [feedback?.id, markFeedbackRead, report?.id])
+
   function shiftWeek(delta: number) {
-    setWeekStart(addDays(weekStart, delta * 7))
+    setSearchParams({ week: addDays(weekStart, delta * 7) }, { replace: true })
   }
 
   const weekEnd = addDays(weekStart, 6)
